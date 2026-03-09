@@ -2,6 +2,47 @@
 //!
 //! Modal input handling: Normal, Insert, Command, Search, Follow modes.
 //! Vim-like keybindings for page navigation, link following, and URL entry.
+//!
+//! Key binding definitions use awase types for platform-agnostic hotkey
+//! representation and serializable binding configuration.
+
+use awase::{Hotkey, Key as AwaseKey, Modifiers as AwaseMods};
+
+/// A keybinding definition: an awase `Hotkey` paired with an action name.
+///
+/// These provide a serializable, user-configurable representation of the
+/// built-in key mappings. The `InputHandler` still performs the runtime
+/// dispatch, but these definitions are the canonical source for documentation
+/// and future user-config-driven rebinding.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct KeyBinding {
+    /// The hotkey that triggers this binding (awase type).
+    pub hotkey: Hotkey,
+    /// The action name to perform.
+    pub action: String,
+}
+
+/// Default keybindings using awase `Hotkey` types.
+#[must_use]
+pub fn default_bindings() -> Vec<KeyBinding> {
+    vec![
+        // Normal mode navigation
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::J), action: "scroll_down".into() },
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::K), action: "scroll_up".into() },
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::H), action: "scroll_left".into() },
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::L), action: "scroll_right".into() },
+        // Ctrl shortcuts
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::T), action: "new_tab".into() },
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::W), action: "close_tab".into() },
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::Q), action: "quit".into() },
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::D), action: "half_page_down".into() },
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::U), action: "half_page_up".into() },
+        // Follow mode
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::F), action: "follow_link".into() },
+        // Bookmarks
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::SHIFT, AwaseKey::B), action: "show_bookmarks".into() },
+    ]
+}
 
 /// Input mode for the browser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -525,6 +566,32 @@ pub fn generate_hint_labels(count: usize) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_bindings_are_valid() {
+        let bindings = default_bindings();
+        assert!(!bindings.is_empty());
+        let has_quit = bindings.iter().any(|b| b.action == "quit");
+        assert!(has_quit, "should have a quit binding");
+    }
+
+    #[test]
+    fn bindings_are_serializable() {
+        let bindings = default_bindings();
+        let json = serde_json::to_string(&bindings).unwrap();
+        let deserialized: Vec<KeyBinding> = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.len(), bindings.len());
+    }
+
+    #[test]
+    fn hotkey_display_roundtrip() {
+        let bindings = default_bindings();
+        for binding in &bindings {
+            let display = binding.hotkey.display();
+            let reparsed = Hotkey::parse(&display).unwrap();
+            assert_eq!(binding.hotkey, reparsed);
+        }
+    }
 
     #[test]
     fn normal_mode_scroll() {

@@ -21,6 +21,7 @@ mod input;
 mod layout;
 mod mcp;
 mod render;
+mod scripting;
 mod tabs;
 mod url_util;
 
