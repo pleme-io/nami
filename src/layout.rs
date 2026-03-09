@@ -4,7 +4,7 @@
 //! absolute positions and sizes for each visible element.
 //! Uses taffy for CSS flexbox and grid layout algorithms.
 
-use crate::css::{ComputedStyle, Display, Dimension, Stylesheet};
+use crate::css::{self, ComputedStyle, Dimension, Display, Stylesheet};
 use crate::dom::{Document, Node, NodeKind};
 
 #[derive(thiserror::Error, Debug)]
@@ -17,6 +17,21 @@ pub enum LayoutError {
 
 pub type Result<T> = std::result::Result<T, LayoutError>;
 
+/// The content associated with a layout box.
+#[derive(Debug, Clone)]
+pub enum BoxContent {
+    /// An element box.
+    Element {
+        tag: String,
+        style: ComputedStyle,
+    },
+    /// A text run within an element.
+    Text {
+        text: String,
+        style: ComputedStyle,
+    },
+}
+
 /// A positioned box in the layout tree.
 #[derive(Debug, Clone)]
 pub struct LayoutBox {
@@ -28,38 +43,47 @@ pub struct LayoutBox {
     pub width: f32,
     /// Height in pixels.
     pub height: f32,
-    /// Index into the DOM node list that this box corresponds to.
-    pub node_id: usize,
+    /// The content of this box (element or text).
+    pub content: BoxContent,
+    /// Whether this box is a link.
+    pub is_link: bool,
+    /// Link href if this is a link.
+    pub href: Option<String>,
+}
+
+/// Mapping between taffy node IDs and our box metadata.
+struct NodeMeta {
+    content: BoxContent,
+    is_link: bool,
+    href: Option<String>,
 }
 
 /// A computed layout tree.
 pub struct LayoutTree {
     boxes: Vec<LayoutBox>,
-    taffy: taffy::TaffyTree,
-    root_node: Option<taffy::NodeId>,
 }
 
 impl LayoutTree {
     /// Compute layout for a document with the given stylesheets and viewport width.
-    ///
-    /// Walks the DOM tree, creates corresponding taffy nodes with styles derived
-    /// from the CSS cascade, then runs taffy layout to compute absolute positions.
     #[must_use]
     pub fn compute(doc: &Document, styles: &[Stylesheet], viewport_width: f32) -> Self {
         let mut taffy = taffy::TaffyTree::new();
-        let mut boxes = Vec::new();
-        let mut node_counter = 0_usize;
+        let mut meta_map: Vec<(taffy::NodeId, NodeMeta)> = Vec::new();
+        let parent_style = ComputedStyle {
+            color: "#eceff4".to_string(),
+            ..ComputedStyle::default()
+        };
 
-        // Build the taffy tree from the DOM.
         let root_node = build_taffy_node(
             &doc.root,
             &mut taffy,
             styles,
-            &mut boxes,
-            &mut node_counter,
+            &mut meta_map,
+            &parent_style,
+            false,
+            None,
         );
 
-        // Run layout with the given viewport width as available space.
         if let Some(root) = root_node {
             let available = taffy::Size {
                 width: taffy::AvailableSpace::Definite(viewport_width),
@@ -69,9 +93,12 @@ impl LayoutTree {
             if let Err(e) = taffy.compute_layout(root, available) {
                 tracing::warn!(error = %e, "taffy layout computation failed");
             }
+        }
 
-            // Extract computed positions.
-            collect_layout_boxes(&taffy, root, 0.0, 0.0, &mut boxes);
+        // Collect boxes by walking taffy tree.
+        let mut boxes = Vec::new();
+        if let Some(root) = root_node {
+            collect_layout_boxes(&taffy, root, 0.0, 0.0, &meta_map, &mut boxes);
         }
 
         tracing::debug!(
@@ -80,11 +107,7 @@ impl LayoutTree {
             "layout computed"
         );
 
-        Self {
-            boxes,
-            taffy,
-            root_node,
-        }
+        Self { boxes }
     }
 
     /// Get all layout boxes.
@@ -101,6 +124,42 @@ impl LayoutTree {
             .map(|b| b.y + b.height)
             .fold(0.0_f32, f32::max)
     }
+
+    /// Get all link boxes (for click target detection).
+    #[must_use]
+    pub fn link_boxes(&self) -> Vec<&LayoutBox> {
+        self.boxes.iter().filter(|b| b.is_link).collect()
+    }
+
+    /// Find the box at a given (x, y) position.
+    #[must_use]
+    pub fn box_at(&self, x: f32, y: f32) -> Option<&LayoutBox> {
+        // Return the deepest (last in list) box that contains the point.
+        self.boxes
+            .iter()
+            .rev()
+            .find(|b| x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height)
+    }
+
+    /// Find a link at a given (x, y) position.
+    #[must_use]
+    pub fn link_at(&self, x: f32, y: f32) -> Option<&str> {
+        self.boxes
+            .iter()
+            .rev()
+            .filter(|b| b.is_link)
+            .find(|b| x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height)
+            .and_then(|b| b.href.as_deref())
+    }
+
+    /// Get text content boxes in reading order.
+    #[must_use]
+    pub fn text_boxes(&self) -> Vec<&LayoutBox> {
+        self.boxes
+            .iter()
+            .filter(|b| matches!(b.content, BoxContent::Text { .. }))
+            .collect()
+    }
 }
 
 /// Recursively build taffy nodes from the DOM tree.
@@ -108,31 +167,54 @@ fn build_taffy_node(
     node: &Node,
     taffy: &mut taffy::TaffyTree,
     styles: &[Stylesheet],
-    _boxes: &mut Vec<LayoutBox>,
-    counter: &mut usize,
+    meta_map: &mut Vec<(taffy::NodeId, NodeMeta)>,
+    parent_style: &ComputedStyle,
+    parent_is_link: bool,
+    parent_href: Option<&str>,
 ) -> Option<taffy::NodeId> {
-    let node_id = *counter;
-    *counter += 1;
-
     match &node.kind {
         NodeKind::Element(elem) => {
-            // Skip elements with display: none.
-            let computed = compute_element_style(&elem.tag, styles);
+            let computed = css::cascade_style(elem, styles, parent_style);
             if computed.display == Display::None {
                 return None;
+            }
+            if computed.visibility == css::Visibility::Hidden {
+                // Still takes space, but don't render content.
             }
 
             let taffy_style = css_to_taffy_style(&computed, &elem.tag);
 
-            // Build children first.
+            let is_link = elem.tag == "a" && elem.attrs.contains_key("href") || parent_is_link;
+            let href = if elem.tag == "a" {
+                elem.attrs.get("href").map(String::as_str)
+            } else {
+                parent_href
+            };
+
+            // Build children.
             let child_nodes: Vec<taffy::NodeId> = elem
                 .children
                 .iter()
-                .filter_map(|child| build_taffy_node(child, taffy, styles, _boxes, counter))
+                .filter_map(|child| {
+                    build_taffy_node(child, taffy, styles, meta_map, &computed, is_link, href)
+                })
                 .collect();
 
             match taffy.new_with_children(taffy_style, &child_nodes) {
-                Ok(taffy_node) => Some(taffy_node),
+                Ok(taffy_node) => {
+                    meta_map.push((
+                        taffy_node,
+                        NodeMeta {
+                            content: BoxContent::Element {
+                                tag: elem.tag.clone(),
+                                style: computed,
+                            },
+                            is_link,
+                            href: href.map(String::from),
+                        },
+                    ));
+                    Some(taffy_node)
+                }
                 Err(e) => {
                     tracing::trace!(error = %e, tag = %elem.tag, "failed to create taffy node");
                     None
@@ -140,26 +222,48 @@ fn build_taffy_node(
             }
         }
         NodeKind::Text(text) => {
-            if text.trim().is_empty() {
+            let trimmed = if parent_style.white_space == css::WhiteSpace::Pre
+                || parent_style.white_space == css::WhiteSpace::PreWrap
+            {
+                text.clone()
+            } else {
+                let collapsed: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
+                collapsed
+            };
+
+            if trimmed.is_empty() {
                 return None;
             }
 
-            // Text nodes get a leaf node with size based on character count.
-            // This is a rough approximation; real text layout requires font metrics.
-            let char_count = text.len() as f32;
-            let estimated_width = char_count * 8.0; // ~8px per character estimate
-            let estimated_height = 16.0; // single line height
+            // Estimate text dimensions based on character count and font size.
+            let char_width = parent_style.font_size * 0.6; // Approximate char width.
+            let line_height = parent_style.font_size * parent_style.line_height;
+            let text_width = trimmed.len() as f32 * char_width;
+            let estimated_height = line_height;
 
             let style = taffy::Style {
                 size: taffy::Size {
-                    width: taffy::Dimension::Length(estimated_width),
+                    width: taffy::Dimension::Length(text_width),
                     height: taffy::Dimension::Length(estimated_height),
                 },
                 ..Default::default()
             };
 
             match taffy.new_leaf(style) {
-                Ok(taffy_node) => Some(taffy_node),
+                Ok(taffy_node) => {
+                    meta_map.push((
+                        taffy_node,
+                        NodeMeta {
+                            content: BoxContent::Text {
+                                text: trimmed,
+                                style: parent_style.clone(),
+                            },
+                            is_link: parent_is_link,
+                            href: parent_href.map(String::from),
+                        },
+                    ));
+                    Some(taffy_node)
+                }
                 Err(e) => {
                     tracing::trace!(error = %e, "failed to create text taffy node");
                     None
@@ -170,81 +274,15 @@ fn build_taffy_node(
     }
 }
 
-/// Compute the merged style for an element from all stylesheets.
-fn compute_element_style(tag: &str, styles: &[Stylesheet]) -> ComputedStyle {
-    let mut computed = default_style_for_tag(tag);
-    for sheet in styles {
-        computed = sheet.compute_style(tag, &computed);
-    }
-    computed
-}
-
-/// Return the default (user-agent) style for common HTML tags.
-fn default_style_for_tag(tag: &str) -> ComputedStyle {
-    let mut style = ComputedStyle::default();
-
-    match tag {
-        "div" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "section" | "article"
-        | "main" | "header" | "footer" | "nav" | "aside" | "ul" | "ol" | "li" | "blockquote"
-        | "pre" | "form" | "fieldset" | "table" | "hr" | "address" | "figure"
-        | "figcaption" | "details" | "summary" => {
-            style.display = Display::Block;
-        }
-        "html" | "body" => {
-            style.display = Display::Block;
-        }
-        "head" | "script" | "style" | "meta" | "link" | "title" => {
-            style.display = Display::None;
-        }
-        _ => {
-            style.display = Display::Inline;
-        }
-    }
-
-    // Heading font sizes.
-    match tag {
-        "h1" => {
-            style.font_size = 32.0;
-            style.font_weight = crate::css::FontWeight::Bold;
-        }
-        "h2" => {
-            style.font_size = 24.0;
-            style.font_weight = crate::css::FontWeight::Bold;
-        }
-        "h3" => {
-            style.font_size = 18.7;
-            style.font_weight = crate::css::FontWeight::Bold;
-        }
-        "h4" => {
-            style.font_size = 16.0;
-            style.font_weight = crate::css::FontWeight::Bold;
-        }
-        "h5" => {
-            style.font_size = 13.3;
-            style.font_weight = crate::css::FontWeight::Bold;
-        }
-        "h6" => {
-            style.font_size = 10.7;
-            style.font_weight = crate::css::FontWeight::Bold;
-        }
-        "strong" | "b" => {
-            style.font_weight = crate::css::FontWeight::Bold;
-        }
-        _ => {}
-    }
-
-    style
-}
-
 /// Convert a `ComputedStyle` into a taffy `Style`.
-fn css_to_taffy_style(computed: &ComputedStyle, tag: &str) -> taffy::Style {
+fn css_to_taffy_style(computed: &ComputedStyle, _tag: &str) -> taffy::Style {
     let display = match computed.display {
-        Display::Block => taffy::Display::Block,
+        Display::Block | Display::ListItem => taffy::Display::Block,
         Display::Flex => taffy::Display::Flex,
         Display::Grid => taffy::Display::Grid,
         Display::None => taffy::Display::None,
-        // Inline and inline-block are approximated as block for taffy.
         Display::Inline | Display::InlineBlock => taffy::Display::Block,
+        Display::Table | Display::TableRow | Display::TableCell => taffy::Display::Block,
     };
 
     let width = dimension_to_taffy(computed.width);
@@ -264,13 +302,19 @@ fn css_to_taffy_style(computed: &ComputedStyle, tag: &str) -> taffy::Style {
         left: taffy::LengthPercentage::Length(computed.padding.left),
     };
 
-    let _ = tag; // May be used for tag-specific layout defaults in the future.
+    let border = taffy::Rect {
+        top: taffy::LengthPercentage::Length(computed.border_width.top),
+        right: taffy::LengthPercentage::Length(computed.border_width.right),
+        bottom: taffy::LengthPercentage::Length(computed.border_width.bottom),
+        left: taffy::LengthPercentage::Length(computed.border_width.left),
+    };
 
     taffy::Style {
         display,
         size: taffy::Size { width, height },
         margin,
         padding,
+        border,
         ..Default::default()
     }
 }
@@ -281,7 +325,9 @@ fn dimension_to_taffy(dim: Dimension) -> taffy::Dimension {
         Dimension::Auto => taffy::Dimension::Auto,
         Dimension::Px(px) => taffy::Dimension::Length(px),
         Dimension::Percent(pct) => taffy::Dimension::Percent(pct / 100.0),
-        Dimension::Em(em) => taffy::Dimension::Length(em * 16.0), // approximate
+        Dimension::Em(em) => taffy::Dimension::Length(em * 16.0),
+        Dimension::Rem(rem) => taffy::Dimension::Length(rem * 16.0),
+        Dimension::Vw(_) | Dimension::Vh(_) => taffy::Dimension::Auto,
     }
 }
 
@@ -291,6 +337,7 @@ fn collect_layout_boxes(
     node: taffy::NodeId,
     parent_x: f32,
     parent_y: f32,
+    meta_map: &[(taffy::NodeId, NodeMeta)],
     boxes: &mut Vec<LayoutBox>,
 ) {
     let Ok(layout) = taffy.layout(node) else {
@@ -300,20 +347,25 @@ fn collect_layout_boxes(
     let x = parent_x + layout.location.x;
     let y = parent_y + layout.location.y;
 
-    boxes.push(LayoutBox {
-        x,
-        y,
-        width: layout.size.width,
-        height: layout.size.height,
-        node_id: boxes.len(),
-    });
+    // Find the metadata for this node.
+    if let Some((_, meta)) = meta_map.iter().find(|(id, _)| *id == node) {
+        boxes.push(LayoutBox {
+            x,
+            y,
+            width: layout.size.width,
+            height: layout.size.height,
+            content: meta.content.clone(),
+            is_link: meta.is_link,
+            href: meta.href.clone(),
+        });
+    }
 
     let Ok(children) = taffy.children(node) else {
         return;
     };
 
     for child in children {
-        collect_layout_boxes(taffy, child, x, y, boxes);
+        collect_layout_boxes(taffy, child, x, y, meta_map, boxes);
     }
 }
 
@@ -327,7 +379,6 @@ mod tests {
     fn compute_empty_document() {
         let doc = Document::parse("");
         let tree = LayoutTree::compute(&doc, &[], 800.0);
-        // Should not panic.
         let _ = tree.boxes();
     }
 
@@ -336,7 +387,6 @@ mod tests {
         let html = "<html><body><p>Hello world</p></body></html>";
         let doc = Document::parse(html);
         let tree = LayoutTree::compute(&doc, &[], 800.0);
-        // Should produce some layout boxes.
         assert!(!tree.boxes().is_empty());
     }
 
@@ -357,7 +407,6 @@ mod tests {
         let tree = LayoutTree::compute(&doc, &[], 800.0);
 
         for b in tree.boxes() {
-            // All positions should be non-negative.
             assert!(b.x >= 0.0, "x should be >= 0, got {}", b.x);
             assert!(b.y >= 0.0, "y should be >= 0, got {}", b.y);
         }
@@ -379,54 +428,29 @@ mod tests {
         let sheet = Stylesheet::parse(css);
         let tree = LayoutTree::compute(&doc, &[sheet], 800.0);
 
-        // The div and its text child should not produce layout boxes
-        // (though html/body will).
         let boxes_before = {
             let tree2 = LayoutTree::compute(&doc, &[], 800.0);
             tree2.boxes().len()
         };
-        // With display:none, we should have fewer boxes.
         assert!(tree.boxes().len() <= boxes_before);
     }
 
     #[test]
-    fn default_style_block_elements() {
-        let style = default_style_for_tag("div");
-        assert_eq!(style.display, Display::Block);
-
-        let style = default_style_for_tag("p");
-        assert_eq!(style.display, Display::Block);
+    fn text_boxes_collected() {
+        let html = "<html><body><p>Hello</p><p>World</p></body></html>";
+        let doc = Document::parse(html);
+        let tree = LayoutTree::compute(&doc, &[], 800.0);
+        let texts = tree.text_boxes();
+        assert!(!texts.is_empty());
     }
 
     #[test]
-    fn default_style_inline_elements() {
-        let style = default_style_for_tag("span");
-        assert_eq!(style.display, Display::Inline);
-
-        let style = default_style_for_tag("a");
-        assert_eq!(style.display, Display::Inline);
-    }
-
-    #[test]
-    fn default_style_hidden_elements() {
-        let style = default_style_for_tag("head");
-        assert_eq!(style.display, Display::None);
-
-        let style = default_style_for_tag("script");
-        assert_eq!(style.display, Display::None);
-
-        let style = default_style_for_tag("style");
-        assert_eq!(style.display, Display::None);
-    }
-
-    #[test]
-    fn default_style_headings() {
-        let h1 = default_style_for_tag("h1");
-        assert!((h1.font_size - 32.0).abs() < f32::EPSILON);
-        assert_eq!(h1.font_weight, crate::css::FontWeight::Bold);
-
-        let h2 = default_style_for_tag("h2");
-        assert!((h2.font_size - 24.0).abs() < f32::EPSILON);
+    fn link_boxes_detected() {
+        let html = r#"<html><body><a href="/test">Click me</a></body></html>"#;
+        let doc = Document::parse(html);
+        let tree = LayoutTree::compute(&doc, &[], 800.0);
+        let links = tree.link_boxes();
+        assert!(!links.is_empty());
     }
 
     #[test]

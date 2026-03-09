@@ -46,6 +46,54 @@ pub struct Document {
     pub root: Node,
 }
 
+/// Information about a link found in the document.
+#[derive(Debug, Clone)]
+pub struct LinkInfo {
+    /// The href URL.
+    pub href: String,
+    /// The link text content.
+    pub text: String,
+    /// Link index (0-based order of appearance).
+    pub index: usize,
+}
+
+/// Information about a form found in the document.
+#[derive(Debug, Clone)]
+pub struct FormInfo {
+    /// Form action URL.
+    pub action: String,
+    /// Form method (GET, POST).
+    pub method: String,
+    /// Input fields within the form.
+    pub inputs: Vec<InputInfo>,
+}
+
+/// Information about a form input field.
+#[derive(Debug, Clone)]
+pub struct InputInfo {
+    /// Input name attribute.
+    pub name: String,
+    /// Input type (text, password, hidden, etc.).
+    pub input_type: String,
+    /// Input value.
+    pub value: String,
+    /// Placeholder text.
+    pub placeholder: String,
+}
+
+/// Information about an image in the document.
+#[derive(Debug, Clone)]
+pub struct ImageInfo {
+    /// Image source URL.
+    pub src: String,
+    /// Alt text.
+    pub alt: String,
+    /// Width attribute if specified.
+    pub width: Option<u32>,
+    /// Height attribute if specified.
+    pub height: Option<u32>,
+}
+
 // ---------------------------------------------------------------------------
 // html5ever sink -- collects parse events into our Node tree
 // ---------------------------------------------------------------------------
@@ -67,6 +115,8 @@ struct DomSinkInner {
     nodes: Vec<Node>,
     /// Parent index for each node (None for the root document).
     parents: Vec<Option<usize>>,
+    /// QualName for each node (needed by html5ever's elem_name).
+    qualnames: Vec<QualName>,
 }
 
 impl DomSink {
@@ -79,10 +129,16 @@ impl DomSink {
                 children: Vec::new(),
             }),
         };
+        let doc_qualname = QualName::new(
+            None,
+            html5ever::ns!(html),
+            html5ever::local_name!("html"),
+        );
         Self {
             inner: UnsafeCell::new(DomSinkInner {
                 nodes: vec![doc_node],
                 parents: vec![None],
+                qualnames: vec![doc_qualname],
             }),
         }
     }
@@ -103,12 +159,13 @@ impl DomSink {
         unsafe { &*self.inner.get() }
     }
 
-    fn push_node(&self, node: Node, parent: Option<usize>) -> usize {
+    fn push_node(&self, node: Node, parent: Option<usize>, qualname: QualName) -> usize {
         // SAFETY: html5ever guarantees single-threaded sequential access.
         let inner = unsafe { self.inner_mut() };
         let idx = inner.nodes.len();
         inner.nodes.push(node);
         inner.parents.push(parent);
+        inner.qualnames.push(qualname);
         idx
     }
 
@@ -116,8 +173,6 @@ impl DomSink {
     /// bottom-up, and return the document root.
     fn finish(self) -> Node {
         let inner = self.inner.into_inner();
-        // We need to build the tree by re-parenting nodes.
-        // Collect children in order.
         let len = inner.nodes.len();
         let mut children_map: Vec<Vec<usize>> = vec![Vec::new(); len];
 
@@ -127,12 +182,6 @@ impl DomSink {
             }
         }
 
-        // Build bottom-up: take children from the nodes vec using indices.
-        // We do this by processing in reverse order and replacing node children.
-        // Since nodes own their children, we need to move them.
-
-        // First pass: build children lists in-place using a placeholder approach.
-        // We'll process from highest index down so children are moved before parents.
         let mut taken: Vec<Option<Node>> = inner.nodes.into_iter().map(Some).collect();
 
         for i in (0..len).rev() {
@@ -179,25 +228,8 @@ impl TreeSink for DomSink {
     }
 
     fn elem_name<'a>(&'a self, target: &'a usize) -> &'a QualName {
-        // We need to return a reference to a QualName.
-        // This is tricky with our node structure, so we'll use a static fallback.
-        // html5ever only calls this during tree construction to compare element names.
-        static UNKNOWN: std::sync::LazyLock<QualName> = std::sync::LazyLock::new(|| {
-            QualName::new(
-                None,
-                html5ever::ns!(html),
-                html5ever::local_name!("div"),
-            )
-        });
-
         let inner = self.inner_ref();
-        if let NodeKind::Element(ref elem) = inner.nodes[*target].kind {
-            // We can't easily return a reference to a QualName we don't store.
-            // Use the static unknown as fallback -- html5ever primarily uses this
-            // for foster parenting checks.
-            let _ = elem;
-        }
-        &UNKNOWN
+        &inner.qualnames[*target]
     }
 
     fn create_element(
@@ -219,14 +251,15 @@ impl TreeSink for DomSink {
             }),
         };
 
-        self.push_node(node, None)
+        self.push_node(node, None, name)
     }
 
     fn create_comment(&self, text: html5ever::tendril::StrTendril) -> usize {
         let node = Node {
             kind: NodeKind::Comment(text.to_string()),
         };
-        self.push_node(node, None)
+        let qn = QualName::new(None, html5ever::ns!(), html5ever::local_name!(""));
+        self.push_node(node, None, qn)
     }
 
     fn create_pi(
@@ -237,7 +270,8 @@ impl TreeSink for DomSink {
         let node = Node {
             kind: NodeKind::Comment(String::new()),
         };
-        self.push_node(node, None)
+        let qn = QualName::new(None, html5ever::ns!(), html5ever::local_name!(""));
+        self.push_node(node, None, qn)
     }
 
     fn append(&self, parent: &usize, child: html5ever::tree_builder::NodeOrText<usize>) {
@@ -256,9 +290,13 @@ impl TreeSink for DomSink {
                 let node = Node {
                     kind: NodeKind::Text(text_str),
                 };
-                let idx = inner.nodes.len();
                 inner.nodes.push(node);
                 inner.parents.push(Some(*parent));
+                inner.qualnames.push(QualName::new(
+                    None,
+                    html5ever::ns!(),
+                    html5ever::local_name!(""),
+                ));
             }
         }
     }
@@ -269,7 +307,6 @@ impl TreeSink for DomSink {
         prev_element: &usize,
         child: html5ever::tree_builder::NodeOrText<usize>,
     ) {
-        // Simplified: always append to the element.
         let _ = prev_element;
         self.append(element, child);
     }
@@ -300,7 +337,6 @@ impl TreeSink for DomSink {
         sibling: &usize,
         new_node: html5ever::tree_builder::NodeOrText<usize>,
     ) {
-        // Simplified: insert as child of sibling's parent.
         let parent = self.inner_ref().parents[*sibling].unwrap_or(0);
         self.append(&parent, new_node);
     }
@@ -366,17 +402,93 @@ impl Document {
         links
     }
 
+    /// Get detailed link information including text and index.
+    #[must_use]
+    pub fn link_infos(&self) -> Vec<LinkInfo> {
+        let mut infos = Vec::new();
+        collect_link_infos(&self.root, &mut infos);
+        infos
+    }
+
     /// Extract all text content from the document, stripping tags.
     #[must_use]
     pub fn text_content(&self) -> String {
         let mut text = String::new();
         collect_text(&self.root, &mut text);
-        // Normalise whitespace: collapse runs of whitespace into single spaces.
-        let normalised: String = text
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ");
+        let normalised: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
         normalised
+    }
+
+    /// Find elements by tag name.
+    #[must_use]
+    pub fn elements_by_tag(&self, tag: &str) -> Vec<&Element> {
+        let mut result = Vec::new();
+        find_elements_by_tag(&self.root, tag, &mut result);
+        result
+    }
+
+    /// Find an element by ID attribute.
+    #[must_use]
+    pub fn element_by_id(&self, id: &str) -> Option<&Element> {
+        find_element_by_id(&self.root, id)
+    }
+
+    /// Find elements with a given class name.
+    #[must_use]
+    pub fn elements_by_class(&self, class: &str) -> Vec<&Element> {
+        let mut result = Vec::new();
+        find_elements_by_class(&self.root, class, &mut result);
+        result
+    }
+
+    /// Extract all image information from the document.
+    #[must_use]
+    pub fn images(&self) -> Vec<ImageInfo> {
+        let mut images = Vec::new();
+        collect_images(&self.root, &mut images);
+        images
+    }
+
+    /// Extract form information from the document.
+    #[must_use]
+    pub fn forms(&self) -> Vec<FormInfo> {
+        let mut forms = Vec::new();
+        collect_forms(&self.root, &mut forms);
+        forms
+    }
+
+    /// Get inline stylesheets from `<style>` elements.
+    #[must_use]
+    pub fn inline_styles(&self) -> Vec<String> {
+        let mut styles = Vec::new();
+        collect_inline_styles(&self.root, &mut styles);
+        styles
+    }
+
+    /// Get linked stylesheet URLs from `<link rel="stylesheet">` elements.
+    #[must_use]
+    pub fn stylesheet_links(&self) -> Vec<String> {
+        let mut links = Vec::new();
+        collect_stylesheet_links(&self.root, &mut links);
+        links
+    }
+
+    /// Find the `<body>` element if it exists.
+    #[must_use]
+    pub fn body(&self) -> Option<&Element> {
+        find_element_by_tag(&self.root, "body")
+    }
+
+    /// Get meta tag content by name.
+    #[must_use]
+    pub fn meta_content(&self, name: &str) -> Option<String> {
+        let metas = self.elements_by_tag("meta");
+        for meta in metas {
+            if meta.attrs.get("name").map(String::as_str) == Some(name) {
+                return meta.attrs.get("content").cloned();
+            }
+        }
+        None
     }
 }
 
@@ -384,12 +496,10 @@ impl Document {
 // Tree traversal helpers
 // ---------------------------------------------------------------------------
 
-/// Recursively search for the `<title>` element and return its text content.
 fn find_title(node: &Node) -> Option<&str> {
     match &node.kind {
         NodeKind::Element(elem) => {
             if elem.tag == "title" {
-                // Return the first text child.
                 for child in &elem.children {
                     if let NodeKind::Text(ref text) = child.kind {
                         return Some(text.as_str());
@@ -397,7 +507,6 @@ fn find_title(node: &Node) -> Option<&str> {
                 }
                 return None;
             }
-            // Recurse into children.
             for child in &elem.children {
                 if let Some(title) = find_title(child) {
                     return Some(title);
@@ -409,7 +518,6 @@ fn find_title(node: &Node) -> Option<&str> {
     }
 }
 
-/// Collect all `href` values from `<a>` elements.
 fn collect_links<'a>(node: &'a Node, links: &mut Vec<&'a str>) {
     if let NodeKind::Element(ref elem) = node.kind {
         if elem.tag == "a" {
@@ -423,7 +531,26 @@ fn collect_links<'a>(node: &'a Node, links: &mut Vec<&'a str>) {
     }
 }
 
-/// Collect all text content from a node tree.
+fn collect_link_infos(node: &Node, infos: &mut Vec<LinkInfo>) {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.tag == "a" {
+            if let Some(href) = elem.attrs.get("href") {
+                let mut text = String::new();
+                collect_text(node, &mut text);
+                let text = text.split_whitespace().collect::<Vec<_>>().join(" ");
+                infos.push(LinkInfo {
+                    href: href.clone(),
+                    text,
+                    index: infos.len(),
+                });
+            }
+        }
+        for child in &elem.children {
+            collect_link_infos(child, infos);
+        }
+    }
+}
+
 fn collect_text(node: &Node, buf: &mut String) {
     match &node.kind {
         NodeKind::Text(text) => {
@@ -443,6 +570,277 @@ fn collect_text(node: &Node, buf: &mut String) {
     }
 }
 
+fn find_elements_by_tag<'a>(node: &'a Node, tag: &str, result: &mut Vec<&'a Element>) {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.tag == tag {
+            result.push(elem);
+        }
+        for child in &elem.children {
+            find_elements_by_tag(child, tag, result);
+        }
+    }
+}
+
+fn find_element_by_tag<'a>(node: &'a Node, tag: &str) -> Option<&'a Element> {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.tag == tag {
+            return Some(elem);
+        }
+        for child in &elem.children {
+            if let Some(found) = find_element_by_tag(child, tag) {
+                return Some(found);
+            }
+        }
+    }
+    None
+}
+
+fn find_element_by_id<'a>(node: &'a Node, id: &str) -> Option<&'a Element> {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.attrs.get("id").map(String::as_str) == Some(id) {
+            return Some(elem);
+        }
+        for child in &elem.children {
+            if let Some(found) = find_element_by_id(child, id) {
+                return Some(found);
+            }
+        }
+    }
+    None
+}
+
+fn find_elements_by_class<'a>(node: &'a Node, class: &str, result: &mut Vec<&'a Element>) {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if let Some(classes) = elem.attrs.get("class") {
+            if classes.split_whitespace().any(|c| c == class) {
+                result.push(elem);
+            }
+        }
+        for child in &elem.children {
+            find_elements_by_class(child, class, result);
+        }
+    }
+}
+
+fn collect_images(node: &Node, images: &mut Vec<ImageInfo>) {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.tag == "img" {
+            let src = elem.attrs.get("src").cloned().unwrap_or_default();
+            let alt = elem.attrs.get("alt").cloned().unwrap_or_default();
+            let width = elem
+                .attrs
+                .get("width")
+                .and_then(|v| v.parse::<u32>().ok());
+            let height = elem
+                .attrs
+                .get("height")
+                .and_then(|v| v.parse::<u32>().ok());
+            images.push(ImageInfo {
+                src,
+                alt,
+                width,
+                height,
+            });
+        }
+        for child in &elem.children {
+            collect_images(child, images);
+        }
+    }
+}
+
+fn collect_forms(node: &Node, forms: &mut Vec<FormInfo>) {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.tag == "form" {
+            let action = elem.attrs.get("action").cloned().unwrap_or_default();
+            let method = elem
+                .attrs
+                .get("method")
+                .cloned()
+                .unwrap_or_else(|| "GET".to_string())
+                .to_uppercase();
+            let mut inputs = Vec::new();
+            collect_form_inputs(&Node { kind: NodeKind::Element(elem.clone()) }, &mut inputs);
+            forms.push(FormInfo {
+                action,
+                method,
+                inputs,
+            });
+        }
+        for child in &elem.children {
+            collect_forms(child, forms);
+        }
+    }
+}
+
+fn collect_form_inputs(node: &Node, inputs: &mut Vec<InputInfo>) {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.tag == "input" || elem.tag == "textarea" {
+            let name = elem.attrs.get("name").cloned().unwrap_or_default();
+            let input_type = elem
+                .attrs
+                .get("type")
+                .cloned()
+                .unwrap_or_else(|| "text".to_string());
+            let value = elem.attrs.get("value").cloned().unwrap_or_default();
+            let placeholder = elem.attrs.get("placeholder").cloned().unwrap_or_default();
+            inputs.push(InputInfo {
+                name,
+                input_type,
+                value,
+                placeholder,
+            });
+        }
+        for child in &elem.children {
+            collect_form_inputs(child, inputs);
+        }
+    }
+}
+
+fn collect_inline_styles(node: &Node, styles: &mut Vec<String>) {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.tag == "style" {
+            let mut text = String::new();
+            for child in &elem.children {
+                if let NodeKind::Text(ref t) = child.kind {
+                    text.push_str(t);
+                }
+            }
+            if !text.is_empty() {
+                styles.push(text);
+            }
+        }
+        for child in &elem.children {
+            collect_inline_styles(child, styles);
+        }
+    }
+}
+
+fn collect_stylesheet_links(node: &Node, links: &mut Vec<String>) {
+    if let NodeKind::Element(ref elem) = node.kind {
+        if elem.tag == "link" {
+            if elem.attrs.get("rel").map(String::as_str) == Some("stylesheet") {
+                if let Some(href) = elem.attrs.get("href") {
+                    links.push(href.clone());
+                }
+            }
+        }
+        for child in &elem.children {
+            collect_stylesheet_links(child, links);
+        }
+    }
+}
+
+/// Convert a node subtree to plain text with structural formatting.
+///
+/// Block elements get newlines, headings get emphasis markers, etc.
+/// This produces human-readable output suitable for terminal display.
+pub fn node_to_text(node: &Node, indent: usize) -> String {
+    let mut out = String::new();
+    node_to_text_inner(node, indent, &mut out, false);
+    out
+}
+
+fn node_to_text_inner(node: &Node, indent: usize, out: &mut String, in_pre: bool) {
+    match &node.kind {
+        NodeKind::Text(text) => {
+            if in_pre {
+                out.push_str(text);
+            } else {
+                // Collapse whitespace.
+                let collapsed: String = text
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                if !collapsed.is_empty() {
+                    out.push_str(&collapsed);
+                }
+            }
+        }
+        NodeKind::Element(elem) => {
+            if elem.tag == "script" || elem.tag == "style" || elem.tag == "head" {
+                return;
+            }
+
+            let is_block = matches!(
+                elem.tag.as_str(),
+                "div" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
+                    | "section" | "article" | "main" | "header" | "footer"
+                    | "nav" | "aside" | "ul" | "ol" | "li" | "blockquote"
+                    | "pre" | "form" | "table" | "tr" | "td" | "th"
+                    | "dl" | "dt" | "dd" | "figure" | "figcaption"
+                    | "details" | "summary" | "hr" | "br"
+            );
+
+            let is_pre = elem.tag == "pre" || in_pre;
+
+            // Block-level formatting.
+            if is_block && !out.is_empty() && !out.ends_with('\n') {
+                out.push('\n');
+            }
+
+            // Heading markers.
+            match elem.tag.as_str() {
+                "h1" => out.push_str("# "),
+                "h2" => out.push_str("## "),
+                "h3" => out.push_str("### "),
+                "h4" => out.push_str("#### "),
+                "h5" => out.push_str("##### "),
+                "h6" => out.push_str("###### "),
+                "li" => {
+                    for _ in 0..indent {
+                        out.push_str("  ");
+                    }
+                    out.push_str("- ");
+                }
+                "hr" => {
+                    out.push_str("---\n");
+                    return;
+                }
+                "br" => {
+                    out.push('\n');
+                    return;
+                }
+                "blockquote" => {
+                    out.push_str("> ");
+                }
+                _ => {}
+            }
+
+            let child_indent = if elem.tag == "ul" || elem.tag == "ol" {
+                indent + 1
+            } else {
+                indent
+            };
+
+            for child in &elem.children {
+                node_to_text_inner(child, child_indent, out, is_pre);
+            }
+
+            // Links: show URL.
+            if elem.tag == "a" {
+                if let Some(href) = elem.attrs.get("href") {
+                    out.push_str(" [");
+                    out.push_str(href);
+                    out.push(']');
+                }
+            }
+
+            // Images: show alt text.
+            if elem.tag == "img" {
+                let alt = elem.attrs.get("alt").map(String::as_str).unwrap_or("[image]");
+                out.push_str("[img: ");
+                out.push_str(alt);
+                out.push(']');
+            }
+
+            if is_block && !out.ends_with('\n') {
+                out.push('\n');
+            }
+        }
+        NodeKind::Comment(_) => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -450,7 +848,6 @@ mod tests {
     #[test]
     fn parse_minimal_html() {
         let doc = Document::parse("<html><body><p>Hello</p></body></html>");
-        // Should not panic and should produce a tree.
         let text = doc.text_content();
         assert!(text.contains("Hello"));
     }
@@ -495,14 +892,14 @@ mod tests {
 
     #[test]
     fn text_content_strips_tags() {
-        let html = "<html><body><h1>Title</h1><p>Some <strong>bold</strong> text.</p></body></html>";
+        let html =
+            "<html><body><h1>Title</h1><p>Some <strong>bold</strong> text.</p></body></html>";
         let doc = Document::parse(html);
         let text = doc.text_content();
         assert!(text.contains("Title"));
         assert!(text.contains("Some"));
         assert!(text.contains("bold"));
         assert!(text.contains("text."));
-        // Should not contain HTML tags.
         assert!(!text.contains("<h1>"));
         assert!(!text.contains("<strong>"));
     }
@@ -527,7 +924,6 @@ mod tests {
 
     #[test]
     fn parse_handles_malformed_html() {
-        // html5ever should handle unclosed tags gracefully.
         let html = "<html><body><p>Unclosed paragraph<div>After div";
         let doc = Document::parse(html);
         let text = doc.text_content();
@@ -538,14 +934,14 @@ mod tests {
     #[test]
     fn parse_empty_string() {
         let doc = Document::parse("");
-        // Should produce a valid document with no meaningful content.
         assert!(doc.title().is_none());
         assert!(doc.links().is_empty());
     }
 
     #[test]
     fn element_attributes() {
-        let html = r#"<html><body><a href="/test" class="link" id="main-link">Click</a></body></html>"#;
+        let html =
+            r#"<html><body><a href="/test" class="link" id="main-link">Click</a></body></html>"#;
         let doc = Document::parse(html);
 
         fn find_element<'a>(node: &'a Node, tag: &str) -> Option<&'a Element> {
@@ -567,7 +963,10 @@ mod tests {
 
         let anchor = find_element(&doc.root, "a").expect("should find <a> element");
         assert_eq!(anchor.attrs.get("href").map(String::as_str), Some("/test"));
-        assert_eq!(anchor.attrs.get("class").map(String::as_str), Some("link"));
+        assert_eq!(
+            anchor.attrs.get("class").map(String::as_str),
+            Some("link")
+        );
         assert_eq!(
             anchor.attrs.get("id").map(String::as_str),
             Some("main-link")
@@ -579,8 +978,92 @@ mod tests {
         let html = "<html><body><p>  Lots   of    spaces  </p></body></html>";
         let doc = Document::parse(html);
         let text = doc.text_content();
-        // Should collapse multiple whitespace into single spaces.
         assert!(!text.contains("   "));
         assert!(text.contains("Lots of spaces"));
+    }
+
+    #[test]
+    fn link_infos_include_text() {
+        let html = r#"<html><body>
+            <a href="/one">First Link</a>
+            <a href="/two">Second Link</a>
+        </body></html>"#;
+        let doc = Document::parse(html);
+        let infos = doc.link_infos();
+        assert_eq!(infos.len(), 2);
+        assert_eq!(infos[0].href, "/one");
+        assert!(infos[0].text.contains("First Link"));
+        assert_eq!(infos[0].index, 0);
+        assert_eq!(infos[1].index, 1);
+    }
+
+    #[test]
+    fn find_by_id() {
+        let html = r#"<html><body><div id="main">Content</div></body></html>"#;
+        let doc = Document::parse(html);
+        let elem = doc.element_by_id("main");
+        assert!(elem.is_some());
+        assert_eq!(elem.unwrap().tag, "div");
+    }
+
+    #[test]
+    fn find_by_class() {
+        let html = r#"<html><body>
+            <div class="item active">One</div>
+            <div class="item">Two</div>
+            <div class="other">Three</div>
+        </body></html>"#;
+        let doc = Document::parse(html);
+        let items = doc.elements_by_class("item");
+        assert_eq!(items.len(), 2);
+    }
+
+    #[test]
+    fn collect_images_info() {
+        let html = r#"<html><body>
+            <img src="/logo.png" alt="Logo" width="100" height="50">
+            <img src="/photo.jpg" alt="Photo">
+        </body></html>"#;
+        let doc = Document::parse(html);
+        let imgs = doc.images();
+        assert_eq!(imgs.len(), 2);
+        assert_eq!(imgs[0].src, "/logo.png");
+        assert_eq!(imgs[0].alt, "Logo");
+        assert_eq!(imgs[0].width, Some(100));
+        assert_eq!(imgs[1].height, None);
+    }
+
+    #[test]
+    fn inline_styles_extracted() {
+        let html = r#"<html><head><style>body { color: red; }</style></head><body></body></html>"#;
+        let doc = Document::parse(html);
+        let styles = doc.inline_styles();
+        assert_eq!(styles.len(), 1);
+        assert!(styles[0].contains("color"));
+    }
+
+    #[test]
+    fn meta_content_lookup() {
+        let html = r#"<html><head><meta name="description" content="A test page"></head><body></body></html>"#;
+        let doc = Document::parse(html);
+        let desc = doc.meta_content("description");
+        assert_eq!(desc.as_deref(), Some("A test page"));
+    }
+
+    #[test]
+    fn node_to_text_formatting() {
+        let html = "<html><body><h1>Title</h1><p>Paragraph</p><ul><li>Item 1</li><li>Item 2</li></ul></body></html>";
+        let doc = Document::parse(html);
+        if let Some(body) = doc.body() {
+            let text = node_to_text(
+                &Node {
+                    kind: NodeKind::Element(body.clone()),
+                },
+                0,
+            );
+            assert!(text.contains("# Title"));
+            assert!(text.contains("Paragraph"));
+            assert!(text.contains("- Item"));
+        }
     }
 }
