@@ -39,6 +39,8 @@ pub fn default_bindings() -> Vec<KeyBinding> {
         KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::U), action: "half_page_up".into() },
         // Follow mode
         KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::F), action: "follow_link".into() },
+        // Search
+        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::Slash), action: "search_forward".into() },
         // Bookmarks
         KeyBinding { hotkey: Hotkey::new(AwaseMods::SHIFT, AwaseKey::B), action: "show_bookmarks".into() },
     ]
