@@ -19,6 +19,7 @@ mod fetch;
 mod history;
 mod input;
 mod layout;
+mod mcp;
 mod render;
 mod tabs;
 mod url_util;
@@ -68,6 +69,8 @@ enum Commands {
         #[arg(long, default_value = "80")]
         width: u32,
     },
+    /// Start the MCP server (stdio transport).
+    Mcp,
 }
 
 #[derive(Subcommand)]
@@ -138,6 +141,14 @@ fn main() -> anyhow::Result<()> {
             if history.is_empty() {
                 println!("No history yet.");
             }
+        }
+        Some(Commands::Mcp) => {
+            rt.block_on(async {
+                if let Err(e) = mcp::run(cfg).await {
+                    eprintln!("MCP server error: {e}");
+                    std::process::exit(1);
+                }
+            });
         }
         Some(Commands::Render { url, width }) => {
             rt.block_on(async {

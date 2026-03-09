@@ -38,6 +38,7 @@ todoku = { git = "https://github.com/pleme-io/todoku" }
 tsunagu = { git = "https://github.com/pleme-io/tsunagu" }
 kaname = { git = "https://github.com/pleme-io/kaname" }
 shikumi = { git = "https://github.com/pleme-io/shikumi" }
+schemars = "1"
 
 # GPU rendering
 wgpu = "25"
