@@ -6,7 +6,7 @@
 //! - Flexbox/grid layout via taffy
 //! - GPU text and image rendering via garasu
 //! - Widget-based UI (tabs, address bar, bookmarks) via egaku
-//! - Rich text rendering via fude
+//! - Rich text rendering via mojiban
 //! - Hot-reloadable configuration via shikumi
 
 mod config;

@@ -9,7 +9,7 @@ GPU-rendered TUI browser. Full web rendering in a GPU-accelerated terminal inter
 - Flexbox/grid layout via taffy
 - GPU text and image rendering via garasu
 - Browser chrome (tabs, address bar, bookmarks) via egaku
-- Rich text content rendering via fude
+- Rich text content rendering via mojiban
 - HTTPS-only mode, tracker blocking
 - Keyboard-driven navigation
 - Hot-reloadable configuration via shikumi
@@ -22,7 +22,7 @@ GPU-rendered TUI browser. Full web rendering in a GPU-accelerated terminal inter
 | `css` | lightningcss parsing, cascade, computed styles |
 | `layout` | taffy flexbox/grid layout engine |
 | `fetch` | reqwest HTTP client (cookies, compression, redirects) |
-| `render` | GPU page rendering via garasu + fude |
+| `render` | GPU page rendering via garasu + mojiban |
 | `config` | shikumi-based configuration |
 
 ## Rendering Pipeline
@@ -37,7 +37,7 @@ CSS (lightningcss) → computed styles → layout (taffy) → render (garasu)
 
 - **garasu** — GPU rendering engine
 - **egaku** — browser chrome widgets (tabs, address bar, bookmarks)
-- **fude** — rich text rendering (HTML content → styled spans)
+- **mojiban** — rich text rendering (HTML content → styled spans)
 - **tsunagu** — daemon IPC (background prefetch)
 - **shikumi** — config discovery + hot-reload
 

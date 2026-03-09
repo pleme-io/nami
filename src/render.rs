@@ -1,7 +1,7 @@
 //! GPU rendering module -- wgpu pipeline for browser content.
 //!
 //! Uses garasu for GPU context, egaku for browser chrome (address bar,
-//! tabs, bookmarks bar), and fude for rich text content rendering.
+//! tabs, bookmarks bar), and mojiban for rich text content rendering.
 //! Renders: text blocks, inline images, form controls, scroll regions.
 //!
 //! # Architecture
@@ -13,7 +13,7 @@
 //!       |
 //!       v
 //! Render commands (garasu primitives)
-//!   - Text spans (fude rich text with computed styles)
+//!   - Text spans (mojiban rich text with computed styles)
 //!   - Image textures (decoded via image crate)
 //!   - Background rectangles (solid colour fills)
 //!   - Borders (line primitives)
@@ -34,7 +34,7 @@
 //! # Planned Components
 //!
 //! - **Page content renderer**: Walks the layout tree and emits garasu draw
-//!   commands for each visible box. Text is rendered via fude with styles
+//!   commands for each visible box. Text is rendered via mojiban with styles
 //!   from the CSS cascade. Background colours and borders are drawn as
 //!   garasu rectangle primitives.
 //!
@@ -60,7 +60,7 @@
 //!
 //! - `garasu`: GPU context management, texture loading, shader pipeline
 //! - `egaku`: Widget toolkit for browser chrome (tabs, address bar, scroll)
-//! - `fude`: Rich text rendering for HTML content
+//! - `mojiban`: Rich text rendering for HTML content
 //! - `wgpu`: Low-level GPU API (managed by garasu)
 //! - `winit`: Window creation and event loop (managed by garasu)
 //! - `image`: Decoding inline images (PNG, JPEG, GIF, WebP)

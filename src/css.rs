@@ -3,6 +3,8 @@
 //! Parses CSS, resolves the cascade (specificity, inheritance),
 //! and produces computed styles for each DOM node.
 
+use lightningcss::traits::ToCss;
+
 /// A parsed CSS stylesheet containing rules.
 #[derive(Debug, Clone)]
 pub struct Stylesheet {
@@ -179,9 +181,10 @@ impl Stylesheet {
                         let mut declarations = Vec::new();
 
                         // Extract declarations from the rule.
-                        for decl in style_rule.declarations.iter() {
-                            let prop_str = decl
+                        for (prop, important) in style_rule.declarations.iter() {
+                            let prop_str = prop
                                 .to_css_string(
+                                    important,
                                     lightningcss::printer::PrinterOptions::default(),
                                 )
                                 .unwrap_or_default();

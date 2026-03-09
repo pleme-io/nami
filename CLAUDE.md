@@ -82,8 +82,8 @@ by `nami-core` imports. After migration, this repo retains only:
 
 ### Dependency note
 
-The Cargo.toml still references old library names (`fude`, `hikidashi`, `kotoba`).
-These need updating to the current names (`mojiban`, `hasami`, `kaname`).
+The old library names (`fude`, `hikidashi`, `kotoba`) have been updated to
+the current names (`mojiban`, `hasami`, `kaname`).
 
 ---
 

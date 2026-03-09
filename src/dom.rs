@@ -6,7 +6,8 @@
 use html5ever::parse_document;
 use html5ever::tendril::TendrilSink;
 use html5ever::tree_builder::TreeSink;
-use markup5ever::{Attribute, QualName};
+use markup5ever::{namespace_url, Attribute, QualName};
+use std::cell::UnsafeCell;
 use std::collections::HashMap;
 
 /// The kind of a DOM node.
@@ -54,7 +55,15 @@ pub struct Document {
 struct NodeHandle(usize);
 
 /// A simple tree-building sink for html5ever.
+///
+/// Uses `UnsafeCell` for interior mutability because html5ever's `TreeSink`
+/// trait methods take `&self` but need to mutate internal state. html5ever
+/// guarantees single-threaded sequential access, so this is sound.
 struct DomSink {
+    inner: UnsafeCell<DomSinkInner>,
+}
+
+struct DomSinkInner {
     nodes: Vec<Node>,
     /// Parent index for each node (None for the root document).
     parents: Vec<Option<usize>>,
@@ -71,28 +80,49 @@ impl DomSink {
             }),
         };
         Self {
-            nodes: vec![doc_node],
-            parents: vec![None],
+            inner: UnsafeCell::new(DomSinkInner {
+                nodes: vec![doc_node],
+                parents: vec![None],
+            }),
         }
     }
 
-    fn push_node(&mut self, node: Node, parent: Option<usize>) -> usize {
-        let idx = self.nodes.len();
-        self.nodes.push(node);
-        self.parents.push(parent);
+    /// Get a mutable reference to the inner data.
+    ///
+    /// # Safety
+    /// Caller must ensure no other references to the inner data exist.
+    /// html5ever guarantees single-threaded sequential access to TreeSink.
+    #[allow(clippy::mut_from_ref)]
+    unsafe fn inner_mut(&self) -> &mut DomSinkInner {
+        unsafe { &mut *self.inner.get() }
+    }
+
+    /// Get a shared reference to the inner data.
+    fn inner_ref(&self) -> &DomSinkInner {
+        // SAFETY: We only call this when no mutable references exist.
+        unsafe { &*self.inner.get() }
+    }
+
+    fn push_node(&self, node: Node, parent: Option<usize>) -> usize {
+        // SAFETY: html5ever guarantees single-threaded sequential access.
+        let inner = unsafe { self.inner_mut() };
+        let idx = inner.nodes.len();
+        inner.nodes.push(node);
+        inner.parents.push(parent);
         idx
     }
 
     /// Build the final tree by attaching children to their parents,
     /// bottom-up, and return the document root.
-    fn finish(mut self) -> Node {
+    fn finish(self) -> Node {
+        let inner = self.inner.into_inner();
         // We need to build the tree by re-parenting nodes.
         // Collect children in order.
-        let len = self.nodes.len();
+        let len = inner.nodes.len();
         let mut children_map: Vec<Vec<usize>> = vec![Vec::new(); len];
 
         for i in 1..len {
-            if let Some(parent) = self.parents[i] {
+            if let Some(parent) = inner.parents[i] {
                 children_map[parent].push(i);
             }
         }
@@ -103,7 +133,7 @@ impl DomSink {
 
         // First pass: build children lists in-place using a placeholder approach.
         // We'll process from highest index down so children are moved before parents.
-        let mut taken: Vec<Option<Node>> = self.nodes.into_iter().map(Some).collect();
+        let mut taken: Vec<Option<Node>> = inner.nodes.into_iter().map(Some).collect();
 
         for i in (0..len).rev() {
             if !children_map[i].is_empty() {
@@ -156,11 +186,12 @@ impl TreeSink for DomSink {
             QualName::new(
                 None,
                 html5ever::ns!(html),
-                html5ever::local_name!("unknown"),
+                html5ever::local_name!("div"),
             )
         });
 
-        if let NodeKind::Element(ref elem) = self.nodes[*target].kind {
+        let inner = self.inner_ref();
+        if let NodeKind::Element(ref elem) = inner.nodes[*target].kind {
             // We can't easily return a reference to a QualName we don't store.
             // Use the static unknown as fallback -- html5ever primarily uses this
             // for foster parenting checks.
@@ -175,10 +206,6 @@ impl TreeSink for DomSink {
         attrs: Vec<Attribute>,
         _flags: html5ever::tree_builder::ElementFlags,
     ) -> usize {
-        // Safety: we need &mut self but TreeSink gives us &self.
-        // html5ever guarantees single-threaded sequential access.
-        let self_mut = unsafe { &mut *(self as *const Self as *mut Self) };
-
         let attr_map: HashMap<String, String> = attrs
             .into_iter()
             .map(|a| (a.name.local.to_string(), a.value.to_string()))
@@ -192,15 +219,14 @@ impl TreeSink for DomSink {
             }),
         };
 
-        self_mut.push_node(node, None)
+        self.push_node(node, None)
     }
 
     fn create_comment(&self, text: html5ever::tendril::StrTendril) -> usize {
-        let self_mut = unsafe { &mut *(self as *const Self as *mut Self) };
         let node = Node {
             kind: NodeKind::Comment(text.to_string()),
         };
-        self_mut.push_node(node, None)
+        self.push_node(node, None)
     }
 
     fn create_pi(
@@ -208,31 +234,31 @@ impl TreeSink for DomSink {
         _target: html5ever::tendril::StrTendril,
         _data: html5ever::tendril::StrTendril,
     ) -> usize {
-        let self_mut = unsafe { &mut *(self as *const Self as *mut Self) };
         let node = Node {
             kind: NodeKind::Comment(String::new()),
         };
-        self_mut.push_node(node, None)
+        self.push_node(node, None)
     }
 
     fn append(&self, parent: &usize, child: html5ever::tree_builder::NodeOrText<usize>) {
-        let self_mut = unsafe { &mut *(self as *const Self as *mut Self) };
+        // SAFETY: html5ever guarantees single-threaded sequential access.
+        let inner = unsafe { self.inner_mut() };
 
         match child {
             html5ever::tree_builder::NodeOrText::AppendNode(idx) => {
-                self_mut.parents[idx] = Some(*parent);
+                inner.parents[idx] = Some(*parent);
             }
             html5ever::tree_builder::NodeOrText::AppendText(text) => {
                 let text_str = text.to_string();
                 if text_str.is_empty() {
                     return;
                 }
-                // Try to merge with the last text child of this parent.
-                // Check if we have a recent text node under this parent.
                 let node = Node {
                     kind: NodeKind::Text(text_str),
                 };
-                self_mut.push_node(node, Some(*parent));
+                let idx = inner.nodes.len();
+                inner.nodes.push(node);
+                inner.parents.push(Some(*parent));
             }
         }
     }
@@ -275,13 +301,14 @@ impl TreeSink for DomSink {
         new_node: html5ever::tree_builder::NodeOrText<usize>,
     ) {
         // Simplified: insert as child of sibling's parent.
-        let parent = self.parents[*sibling].unwrap_or(0);
+        let parent = self.inner_ref().parents[*sibling].unwrap_or(0);
         self.append(&parent, new_node);
     }
 
     fn add_attrs_if_missing(&self, target: &usize, attrs: Vec<Attribute>) {
-        let self_mut = unsafe { &mut *(self as *const Self as *mut Self) };
-        if let NodeKind::Element(ref mut elem) = self_mut.nodes[*target].kind {
+        // SAFETY: html5ever guarantees single-threaded sequential access.
+        let inner = unsafe { self.inner_mut() };
+        if let NodeKind::Element(ref mut elem) = inner.nodes[*target].kind {
             for attr in attrs {
                 elem.attrs
                     .entry(attr.name.local.to_string())
@@ -291,16 +318,18 @@ impl TreeSink for DomSink {
     }
 
     fn remove_from_parent(&self, target: &usize) {
-        let self_mut = unsafe { &mut *(self as *const Self as *mut Self) };
-        self_mut.parents[*target] = None;
+        // SAFETY: html5ever guarantees single-threaded sequential access.
+        let inner = unsafe { self.inner_mut() };
+        inner.parents[*target] = None;
     }
 
     fn reparent_children(&self, node: &usize, new_parent: &usize) {
-        let self_mut = unsafe { &mut *(self as *const Self as *mut Self) };
-        let len = self_mut.parents.len();
+        // SAFETY: html5ever guarantees single-threaded sequential access.
+        let inner = unsafe { self.inner_mut() };
+        let len = inner.parents.len();
         for i in 0..len {
-            if self_mut.parents[i] == Some(*node) {
-                self_mut.parents[i] = Some(*new_parent);
+            if inner.parents[i] == Some(*node) {
+                inner.parents[i] = Some(*new_parent);
             }
         }
     }
