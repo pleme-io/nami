@@ -191,6 +191,67 @@ fn apply_one(
                     }
                 }
             }
+            DomAction::InsertBefore => {
+                let new_nodes = parse_snippet(spec.arg.as_deref());
+                let mut i = 0;
+                while i < parent.children.len() {
+                    if child_matches(&parent.children[i], path, compiled) {
+                        let tag = child_tag(&parent.children[i]);
+                        for (j, n) in new_nodes.iter().enumerate() {
+                            parent.children.insert(i + j, n.clone());
+                        }
+                        i += new_nodes.len() + 1;
+                        report.applied.push(TransformHit {
+                            transform: spec.name.clone(),
+                            action: spec.action,
+                            tag,
+                        });
+                    } else {
+                        i += 1;
+                    }
+                }
+            }
+            DomAction::InsertAfter => {
+                let new_nodes = parse_snippet(spec.arg.as_deref());
+                let mut i = 0;
+                while i < parent.children.len() {
+                    if child_matches(&parent.children[i], path, compiled) {
+                        let tag = child_tag(&parent.children[i]);
+                        for (j, n) in new_nodes.iter().enumerate() {
+                            parent.children.insert(i + 1 + j, n.clone());
+                        }
+                        i += new_nodes.len() + 1;
+                        report.applied.push(TransformHit {
+                            transform: spec.name.clone(),
+                            action: spec.action,
+                            tag,
+                        });
+                    } else {
+                        i += 1;
+                    }
+                }
+            }
+            DomAction::ReplaceWith => {
+                let new_nodes = parse_snippet(spec.arg.as_deref());
+                let mut i = 0;
+                while i < parent.children.len() {
+                    if child_matches(&parent.children[i], path, compiled) {
+                        let tag = child_tag(&parent.children[i]);
+                        parent.children.remove(i);
+                        for (j, n) in new_nodes.iter().enumerate() {
+                            parent.children.insert(i + j, n.clone());
+                        }
+                        i += new_nodes.len();
+                        report.applied.push(TransformHit {
+                            transform: spec.name.clone(),
+                            action: spec.action,
+                            tag,
+                        });
+                    } else {
+                        i += 1;
+                    }
+                }
+            }
         }
     }
 
@@ -239,6 +300,62 @@ fn apply_in_place(node: &mut Node, spec: &DomTransformSpec) -> Option<TransformH
         action: spec.action,
         tag: tag_for_hit,
     })
+}
+
+/// Parse an HTML snippet into nami's `Node` shape. Piggybacks on
+/// nami-core's `Document::parse_fragment` and converts each resulting
+/// core node into a nami node.
+fn parse_snippet(src: Option<&str>) -> Vec<Node> {
+    let Some(s) = src else {
+        return Vec::new();
+    };
+    if s.trim().is_empty() {
+        return Vec::new();
+    }
+    nami_core::dom::Document::parse_fragment(s)
+        .into_iter()
+        .map(core_node_to_nami)
+        .collect()
+}
+
+/// Convert a nami-core `Node` into a nami `Node`. Structural 1:1 with
+/// an attribute-shape adjustment (Vec<(k,v)> → HashMap<k,v>).
+fn core_node_to_nami(n: nami_core::dom::Node) -> Node {
+    use nami_core::dom::NodeData as CoreData;
+    match n.data {
+        CoreData::Element(el) => {
+            let mut attrs = std::collections::HashMap::with_capacity(el.attributes.len());
+            for (k, v) in el.attributes {
+                attrs.insert(k, v);
+            }
+            let children: Vec<Node> = n.children.into_iter().map(core_node_to_nami).collect();
+            Node {
+                kind: NodeKind::Element(Element {
+                    tag: el.tag,
+                    attrs,
+                    children,
+                }),
+            }
+        }
+        CoreData::Text(t) => Node {
+            kind: NodeKind::Text(t),
+        },
+        CoreData::Comment(c) => Node {
+            kind: NodeKind::Comment(c),
+        },
+        // nami-core Document nodes shouldn't appear in parse_fragment output,
+        // but if one does, unwrap it so consumers see its children at the top.
+        CoreData::Document => Node {
+            kind: NodeKind::Text(String::new()),
+        },
+    }
+}
+
+fn child_tag(node: &Node) -> String {
+    match &node.kind {
+        NodeKind::Element(e) => e.tag.clone(),
+        _ => String::new(),
+    }
 }
 
 fn add_class(el: &mut Element, class: &str) {
