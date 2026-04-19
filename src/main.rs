@@ -67,6 +67,25 @@ enum Commands {
     },
     /// Start the MCP server (stdio transport).
     Mcp,
+    /// Dissect any page into its Lisp-space representation.
+    ///
+    /// Prints (in order):
+    ///   1. Detected frameworks + evidence
+    ///   2. Embedded JSON state blobs (Next.js / Remix / Nuxt / JSON-LD / etc.)
+    ///   3. The DOM serialized as S-expressions (capped by --depth)
+    Dissect {
+        url: String,
+        /// Max nesting depth in the DOM-to-Lisp dump.
+        #[arg(long, default_value = "6")]
+        depth: usize,
+        /// Emit everything as one JSON object on stdout instead of the
+        /// sectioned plain-text view. Good for piping to jq / MCP.
+        #[arg(long)]
+        json: bool,
+        /// Skip the DOM dump (only frameworks + state). Handy for overview.
+        #[arg(long)]
+        no_dom: bool,
+    },
     /// Scrape structured data from a page using a Lisp `(defscrape …)` file.
     ///
     /// Default config path: `$XDG_CONFIG_HOME/nami/scrapes.lisp`.
@@ -156,6 +175,95 @@ fn main() -> anyhow::Result<()> {
                 if let Err(e) = mcp::run(cfg).await {
                     eprintln!("MCP server error: {e}");
                     std::process::exit(1);
+                }
+            });
+        }
+        Some(Commands::Dissect {
+            url,
+            depth,
+            json,
+            no_dom,
+        }) => {
+            rt.block_on(async {
+                let fetcher = fetch::Fetcher::new(&cfg.network);
+                match fetcher.fetch(&url).await {
+                    Ok(result) => {
+                        let doc = nami_core::dom::Document::parse(&result.body);
+                        let frameworks = nami_core::framework::detect(&doc);
+                        let state = nami_core::state::extract(&doc);
+                        let dom_sexp = if no_dom {
+                            None
+                        } else {
+                            Some(nami_core::lisp::dom_to_sexp_with(
+                                &doc,
+                                &nami_core::lisp::SexpOptions {
+                                    depth_cap: Some(depth),
+                                    pretty: true,
+                                    trim_whitespace: true,
+                                },
+                            ))
+                        };
+
+                        if json {
+                            let obj = serde_json::json!({
+                                "url": result.url,
+                                "bytes": result.body.len(),
+                                "frameworks": frameworks,
+                                "state": state,
+                                "dom_sexp": dom_sexp,
+                            });
+                            println!("{}", serde_json::to_string_pretty(&obj).unwrap());
+                        } else {
+                            println!("════════════════════════════════════════");
+                            println!(" nami dissect  {}", result.url);
+                            println!(" {} bytes", result.body.len());
+                            println!("════════════════════════════════════════");
+                            println!();
+                            println!("── frameworks ──");
+                            if frameworks.is_empty() {
+                                println!("  (none detected — likely plain HTML)");
+                            } else {
+                                for f in &frameworks {
+                                    println!("  {:<14}  confidence {:.2}", f.name, f.confidence);
+                                    for e in &f.evidence {
+                                        println!("    · {e}");
+                                    }
+                                }
+                            }
+                            println!();
+                            println!("── embedded state ──");
+                            if state.is_empty() {
+                                println!("  (no embedded JSON state found)");
+                            } else {
+                                for s in &state {
+                                    let id =
+                                        s.id.as_deref()
+                                            .map(|i| format!(" id={i}"))
+                                            .unwrap_or_default();
+                                    let ok = if s.value.is_some() { "✓" } else { "✗" };
+                                    println!("  {ok} {:?}{id}  {} bytes", s.kind, s.bytes);
+                                    if let Some(v) = &s.value {
+                                        let preview = serde_json::to_string(v).unwrap();
+                                        let preview = if preview.len() > 160 {
+                                            format!("{}…", &preview[..160])
+                                        } else {
+                                            preview
+                                        };
+                                        println!("      {preview}");
+                                    }
+                                }
+                            }
+                            if let Some(sexp) = dom_sexp {
+                                println!();
+                                println!("── dom as lisp (depth cap = {depth}) ──");
+                                println!("{sexp}");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("nami: fetch: {e}");
+                        std::process::exit(2);
+                    }
                 }
             });
         }
