@@ -33,6 +33,11 @@ pub struct NamiConfig {
     /// Defaults to `~/.config/nami/aliases.lisp` when absent.
     #[serde(default)]
     pub aliases_file: Option<PathBuf>,
+    /// Path to the unified extensions file containing `(defstate …)`,
+    /// `(defeffect …)`, `(defpredicate …)`, `(defplan …)`, and
+    /// `(defagent …)` forms. Defaults to `~/.config/nami/extensions.lisp`.
+    #[serde(default)]
+    pub extensions_file: Option<PathBuf>,
 }
 
 /// Appearance settings.
@@ -111,6 +116,7 @@ impl Default for NamiConfig {
             history_file: None,
             transforms_file: None,
             aliases_file: None,
+            extensions_file: None,
         }
     }
 }
@@ -249,6 +255,13 @@ pub fn default_transforms_path() -> PathBuf {
 #[must_use]
 pub fn default_aliases_path() -> PathBuf {
     config_file("aliases.lisp")
+}
+
+/// Default unified extensions file path — state, effects, predicates,
+/// plans, agents all live here.
+#[must_use]
+pub fn default_extensions_path() -> PathBuf {
+    config_file("extensions.lisp")
 }
 
 /// Default tatara-lisp scrapes file path — same discovery rules as

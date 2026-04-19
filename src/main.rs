@@ -22,6 +22,7 @@ mod layout;
 mod mcp;
 mod render;
 mod scripting;
+mod substrate;
 mod tabs;
 mod transform;
 mod url_util;
@@ -67,6 +68,20 @@ enum Commands {
     },
     /// Start the MCP server (stdio transport).
     Mcp,
+    /// Apply just one named plan's transforms to a URL and render.
+    ///
+    /// Loads `extensions.lisp` + `transforms.lisp`, resolves the
+    /// plan into its transform list, applies them to the fetched
+    /// page, and prints the rendered output.
+    Plan {
+        /// Plan name (as in `(defplan :name …)`).
+        name: String,
+        /// URL to fetch + apply the plan against.
+        url: String,
+        /// Viewport width.
+        #[arg(long, default_value = "80")]
+        width: u32,
+    },
     /// Dissect any page into its Lisp-space representation.
     ///
     /// Prints (in order):
@@ -175,6 +190,80 @@ fn main() -> anyhow::Result<()> {
                 if let Err(e) = mcp::run(cfg).await {
                     eprintln!("MCP server error: {e}");
                     std::process::exit(1);
+                }
+            });
+        }
+        Some(Commands::Plan { name, url, width }) => {
+            rt.block_on(async {
+                let fetcher = fetch::Fetcher::new(&cfg.network);
+
+                let transforms_path = cfg
+                    .transforms_file
+                    .clone()
+                    .unwrap_or_else(config::default_transforms_path);
+                let transforms =
+                    transform::TransformSet::load(&transforms_path).unwrap_or_default();
+
+                let extensions_path = cfg
+                    .extensions_file
+                    .clone()
+                    .unwrap_or_else(config::default_extensions_path);
+                let substrate = substrate::Substrate::load(&extensions_path).unwrap_or_default();
+
+                let Some(plan) = substrate.plans.get(&name) else {
+                    eprintln!(
+                        "nami: plan '{name}' not found in {extensions_path:?}. \
+                         Available: {:?}",
+                        substrate.plans.names()
+                    );
+                    std::process::exit(2);
+                };
+
+                let selected_names = match substrate.plans.resolve(&plan.name) {
+                    Ok(names) => names,
+                    Err(e) => {
+                        eprintln!("nami: plan resolve error: {e}");
+                        std::process::exit(2);
+                    }
+                };
+                let selected: Vec<_> = selected_names
+                    .iter()
+                    .filter_map(|n| transforms.specs.iter().find(|t| t.name == *n).cloned())
+                    .collect();
+
+                match fetcher.fetch_page_with_css(&url).await {
+                    Ok((result, css_texts)) => {
+                        let mut doc = dom::Document::parse(&result.body);
+
+                        if !selected.is_empty() {
+                            let set = transform::TransformSet { specs: selected };
+                            let report = set.apply(&mut doc);
+                            eprintln!(
+                                "[plan {name}] applied {} transform hit(s) on {}",
+                                report.applied.len(),
+                                result.url
+                            );
+                        } else {
+                            eprintln!("[plan {name}] no matching transforms in transforms.lisp");
+                        }
+
+                        let mut stylesheets = Vec::new();
+                        for css_text in &css_texts {
+                            stylesheets.push(css::Stylesheet::parse(css_text));
+                        }
+                        for inline_css in doc.inline_styles() {
+                            stylesheets.push(css::Stylesheet::parse(&inline_css));
+                        }
+                        let layout_tree =
+                            layout::LayoutTree::compute(&doc, &stylesheets, width as f32 * 8.0);
+                        let page = render::render_document(&doc, Some(&layout_tree), width);
+                        let output = render::to_ansi_text(&page);
+                        print!("{output}");
+                    }
+                    Err(e) => {
+                        eprintln!("nami: fetch: {e}");
+                        std::process::exit(2);
+                    }
                 }
             });
         }

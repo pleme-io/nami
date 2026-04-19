@@ -12,9 +12,11 @@ use crate::fetch::Fetcher;
 use crate::history::BrowsingHistory;
 use crate::input::{BrowserAction, InputHandler, Mode};
 use crate::render;
+use crate::substrate::Substrate;
 use crate::tabs::{PageState, TabManager};
 use crate::transform::{AliasSet, TransformSet};
 use crate::url_util;
+use nami_core::store::StateStore;
 
 /// The main browser state.
 pub struct Browser {
@@ -48,6 +50,13 @@ pub struct Browser {
     pub transforms: TransformSet,
     /// Framework-aware selector aliases resolved per-page.
     pub aliases: AliasSet,
+    /// State cells + effects + predicates + plans + agents — the full
+    /// Lisp substrate loaded from extensions.lisp.
+    pub substrate: Substrate,
+    /// Runtime state cells owned by this browser session. Persists
+    /// across navigations (memory-only for V1 — persistent cells land
+    /// in a later commit).
+    pub state_store: StateStore,
 }
 
 impl Browser {
@@ -108,6 +117,24 @@ impl Browser {
             }
         };
 
+        let extensions_path = config
+            .extensions_file
+            .clone()
+            .unwrap_or_else(crate::config::default_extensions_path);
+        let substrate = match Substrate::load(&extensions_path) {
+            Ok(s) => {
+                if !s.is_empty() {
+                    tracing::info!("loaded substrate from {extensions_path:?}: {}", s.summary());
+                }
+                s
+            }
+            Err(e) => {
+                tracing::warn!("failed to load extensions {extensions_path:?}: {e}");
+                Substrate::default()
+            }
+        };
+        let state_store = substrate.build_state_store();
+
         let tabs = match initial_url {
             Some(url) => {
                 let normalized = url_util::normalize_input(url, &config.search_engine);
@@ -138,6 +165,8 @@ impl Browser {
             editing_address: false,
             transforms,
             aliases,
+            substrate,
+            state_store,
         }
     }
 
@@ -183,25 +212,110 @@ impl Browser {
                     stylesheets.push(Stylesheet::parse(&inline_css));
                 }
 
-                // Apply Lisp-authored DOM transforms post-parse, pre-layout.
-                // Absent/empty transforms set is the common case and a no-op.
-                if !self.transforms.is_empty() {
-                    let report = if self.aliases.is_empty() {
-                        self.transforms.apply(&mut doc)
-                    } else {
-                        // Alias-aware path: re-parse with nami-core so
-                        // framework::detect() runs, then expand @-aliases.
+                // Post-parse, pre-layout pipeline:
+                //
+                //   1. If substrate is loaded, parse the body again via
+                //      nami-core for the read-side (framework detection,
+                //      predicate evaluation, state extraction). Agents
+                //      + effects get an EvalContext over the nami-core doc.
+                //   2. Run page-load effects → mutate state cells.
+                //   3. Run page-load agents → produce transform-name decisions.
+                //   4. Compose decided transform names + any unconditional
+                //      transforms the user has in transforms.lisp. Resolve
+                //      aliases if the alias registry is non-empty. Apply
+                //      the bundle to nami's doc via the transform engine.
+                let substrate_live = !self.substrate.is_empty();
+                let have_transforms = !self.transforms.is_empty();
+
+                if substrate_live || have_transforms {
+                    // Re-parse with nami-core if we need detection / agent
+                    // decisions / alias expansion. This is the same body
+                    // string, parsed into a parallel structure.
+                    let need_core = substrate_live || !self.aliases.is_empty();
+                    let (detections, agent_decided) = if need_core {
                         let core_doc = nami_core::dom::Document::parse(&result.body);
                         let detections = nami_core::framework::detect(&core_doc);
-                        let registry = self.aliases.registry();
-                        self.transforms
-                            .apply_with_aliases(&mut doc, &registry, &detections)
+                        let page_state = nami_core::state::extract(&core_doc);
+
+                        // Effects run first and may mutate the state store.
+                        if !self.substrate.effects.is_empty() {
+                            let cx = nami_core::predicate::EvalContext {
+                                doc: &core_doc,
+                                detections: &detections,
+                                state: &page_state,
+                            };
+                            let (_decisions, reports) = nami_core::effect::run_page_load(
+                                &self.state_store,
+                                &self.substrate.effects,
+                                &self.substrate.predicates,
+                                &cx,
+                            );
+                            let fired = reports.iter().filter(|r| r.ok).count();
+                            if fired > 0 {
+                                tracing::info!("ran {fired} Lisp effects on {normalized}");
+                            }
+                        }
+
+                        // Agents decide which transforms should fire.
+                        let decided: Vec<String> = if !self.substrate.agents.is_empty() {
+                            let cx = nami_core::predicate::EvalContext {
+                                doc: &core_doc,
+                                detections: &detections,
+                                state: &page_state,
+                            };
+                            let decisions = nami_core::agent::decide(
+                                &self.substrate.agents,
+                                "page-load",
+                                &self.substrate.predicates,
+                                &self.substrate.plans,
+                                &cx,
+                            );
+                            decisions
+                                .into_iter()
+                                .filter(|d| d.fired)
+                                .flat_map(|d| d.transforms)
+                                .collect()
+                        } else {
+                            Vec::new()
+                        };
+                        (detections, decided)
+                    } else {
+                        (Vec::new(), Vec::new())
                     };
-                    if !report.applied.is_empty() {
-                        tracing::info!(
-                            "applied {} Lisp DOM transforms to {normalized}",
-                            report.applied.len()
-                        );
+
+                    // Build the ordered list of transform specs to apply:
+                    // agent-decided first (if any), then any unconditional
+                    // specs from transforms.lisp. Duplicates allowed —
+                    // idempotent actions are cheap and the user's order is
+                    // preserved.
+                    let mut selected: Vec<_> = Vec::new();
+                    for name in &agent_decided {
+                        if let Some(spec) = self.transforms.specs.iter().find(|t| t.name == *name) {
+                            selected.push(spec.clone());
+                        }
+                    }
+                    if agent_decided.is_empty() {
+                        // No agents drove selection — apply every transform
+                        // the user authored (preserves prior behaviour).
+                        selected.extend(self.transforms.specs.iter().cloned());
+                    }
+
+                    if !selected.is_empty() {
+                        let report = if self.aliases.is_empty() {
+                            nami_core::transform::TransformReport::default();
+                            let set = crate::transform::TransformSet { specs: selected };
+                            set.apply(&mut doc)
+                        } else {
+                            let set = crate::transform::TransformSet { specs: selected };
+                            let registry = self.aliases.registry();
+                            set.apply_with_aliases(&mut doc, &registry, &detections)
+                        };
+                        if !report.applied.is_empty() {
+                            tracing::info!(
+                                "applied {} Lisp transforms to {normalized}",
+                                report.applied.len()
+                            );
+                        }
                     }
                 }
 
