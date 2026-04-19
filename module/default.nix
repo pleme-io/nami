@@ -26,8 +26,34 @@ in
       default = pkgs.nami;
       description = "The nami package to install.";
     };
+    enableMcpBin = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Install a `nami-mcp` shim on PATH that runs `nami mcp`
+        (stdio transport) — useful for registering with
+        blackmatter-anvil:
+
+          blackmatter.components.anvil.mcp.servers.nami = {
+            command = "''${config.home.homeDirectory}/.local/bin/nami-mcp";
+            args = [ ];
+            enableFor = [ "claude-code" ];
+          };
+      '';
+    };
   };
-  config = mkIf cfg.enable {
-    home.packages = [ cfg.package ];
-  };
+  config = mkIf cfg.enable (mkMerge [
+    {
+      home.packages = [ cfg.package ];
+    }
+    (mkIf cfg.enableMcpBin {
+      home.file.".local/bin/nami-mcp" = {
+        executable = true;
+        text = ''
+          #!${pkgs.bash}/bin/bash
+          exec ${cfg.package}/bin/nami mcp "$@"
+        '';
+      };
+    })
+  ]);
 }
