@@ -71,3 +71,16 @@
                  ("post-month" "month")
                  ("post-slug" "slug"))
           :on-match ("reader-mode"))
+
+;; ── queries: HTTP fetches that write to state cells ──────────────
+;; Triggered by name in a route's on-match OR run manually via
+;; `nami query <name>`. Responses auto-parse as JSON into `:into`.
+(defquery :name "public-ip"
+          :endpoint "https://api.ipify.org?format=json"
+          :method "GET"
+          :into "public-ip")
+
+(defquery :name "github-status"
+          :endpoint "https://www.githubstatus.com/api/v2/status.json"
+          :method "GET"
+          :into "github-status")

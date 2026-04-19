@@ -614,6 +614,38 @@ impl Browser {
             }
         }
 
+        // Phase 0.5 — dispatch any on-match names that are QUERIES
+        // rather than transforms. Queries populate state cells; they
+        // fire before effects so effect bodies can see fresh data.
+        // Non-query names fall through to the transform pass below.
+        let mut remaining_route_on_match: Vec<String> = Vec::new();
+        if !self.substrate.queries.is_empty() {
+            let fetcher = crate::query_fetcher::BlockingFetcher::new(&self.config.network);
+            for name in &route_on_match {
+                if self.substrate.queries.get(name).is_some() {
+                    match self
+                        .substrate
+                        .queries
+                        .run(name, &fetcher, &self.state_store)
+                    {
+                        Ok(r) => tracing::info!(
+                            "query '{}' → state cell '{}' ({} bytes{})",
+                            r.query,
+                            r.into,
+                            r.bytes,
+                            if r.parsed_json { ", json" } else { "" }
+                        ),
+                        Err(e) => tracing::warn!("query '{name}' failed: {e}"),
+                    }
+                } else {
+                    remaining_route_on_match.push(name.clone());
+                }
+            }
+        } else {
+            remaining_route_on_match = route_on_match;
+        }
+        let route_on_match = remaining_route_on_match;
+
         // We need nami-core's doc only when aliases, predicates, or
         // agents need to read it. Skip the second parse otherwise.
         let need_core = substrate_live || !self.aliases.is_empty();

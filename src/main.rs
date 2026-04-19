@@ -20,6 +20,7 @@ mod history;
 mod input;
 mod layout;
 mod mcp;
+mod query_fetcher;
 mod render;
 mod scripting;
 mod substrate;
@@ -85,6 +86,15 @@ enum Commands {
     /// Show which route (if any) matches a URL, plus extracted params
     /// and the on-match action list. Diagnostic — doesn't fetch.
     Route { url: String },
+    /// Run a named `(defquery …)` and print the fetched response.
+    /// Uses the blocking reqwest fetcher. For diagnostic use.
+    Query {
+        /// Query name as declared in `(defquery :name …)`.
+        name: String,
+        /// Pretty-print JSON responses. Default: raw text.
+        #[arg(long)]
+        pretty: bool,
+    },
     /// Dissect any page into its Lisp-space representation.
     ///
     /// Prints (in order):
@@ -269,6 +279,44 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             });
+        }
+        Some(Commands::Query { name, pretty }) => {
+            let extensions_path = cfg
+                .extensions_file
+                .clone()
+                .unwrap_or_else(config::default_extensions_path);
+            let substrate = substrate::Substrate::load(&extensions_path).unwrap_or_default();
+            let Some(_q) = substrate.queries.get(&name) else {
+                eprintln!(
+                    "nami: query '{name}' not found in {extensions_path:?}. \
+                     Defined: {}",
+                    substrate.queries.len()
+                );
+                std::process::exit(2);
+            };
+            let store = substrate.build_state_store();
+            let fetcher = query_fetcher::BlockingFetcher::new(&cfg.network);
+            match substrate.queries.run(&name, &fetcher, &store) {
+                Ok(report) => {
+                    eprintln!(
+                        "[query {name}] {} bytes → cell '{}'{}",
+                        report.bytes,
+                        report.into,
+                        if report.parsed_json { " (json)" } else { "" }
+                    );
+                    if let Some(value) = store.get(&report.into) {
+                        if pretty {
+                            println!("{}", serde_json::to_string_pretty(&value).unwrap());
+                        } else {
+                            println!("{}", serde_json::to_string(&value).unwrap());
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("nami: query failed: {e}");
+                    std::process::exit(2);
+                }
+            }
         }
         Some(Commands::Route { url }) => {
             let extensions_path = cfg
