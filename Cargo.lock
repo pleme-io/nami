@@ -2489,7 +2489,7 @@ dependencies = [
 [[package]]
 name = "nami-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/pleme-io/nami-core?branch=main#17f31fb6f60c4fc29641717aa3a467ce41e2d3e7"
+source = "git+ssh://git@github.com/pleme-io/nami-core?branch=main#a1971e0e211e0b8de2be0a1550116beb8aafcb02"
 dependencies = [
  "html5ever",
  "lightningcss",

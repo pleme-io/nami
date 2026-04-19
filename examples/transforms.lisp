@@ -1,36 +1,44 @@
 ;; Starter tatara-lisp transforms for nami.
 ;;
-;; Copy to ~/.config/nami/transforms.lisp (or set `transforms_file`
-;; in nami.yaml) and nami will apply them to every page post-parse,
-;; pre-layout. Each transform is one `(defdom-transform …)` form.
+;; Copy to `$XDG_CONFIG_HOME/nami/transforms.lisp` (typically
+;; `~/.config/nami/transforms.lisp`) and nami will apply them to every
+;; page post-parse, pre-layout. Each transform is one
+;; `(defdom-transform …)` form.
 ;;
-;; Selectors are simple for V1: tag name ("a"), class (".ad"),
-;; or id ("#main"). Actions:
+;; V2 selectors supported:
+;;
+;;   tag        "div"             (case-insensitive)
+;;   class      ".ad"
+;;   id         "#hero"
+;;   universal  "*"
+;;   compound   "div.card#hero"
+;;   descendant "article p"        (space)
+;;   child      "ul > li"          (greater-than)
+;;
+;; Actions:
 ;;
 ;;   remove        — delete matches from the tree
-;;   unwrap        — replace matches with their children (strip wrapper)
+;;   unwrap        — replace matches with their children
 ;;   add-class     — :arg = class name
 ;;   remove-class  — :arg = class name
 ;;   set-attr      — :arg = "name=value"
 ;;   remove-attr   — :arg = attribute name
 ;;   set-text      — :arg = new inner text
 
-;; ── sanity: strip script and style tags we can't run. ─────────────
-;; nami has no JS engine (yet — wasm/wasi sandboxing is the roadmap),
-;; so <script> content only adds parse noise. Same for the heavy
-;; inline <style> blocks we do a cascade on anyway.
+;; ── sanity: strip inert JS noise (nami has no JS engine yet; the WASM/ ──
+;; ── WASI sandbox arc is on the roadmap).                              ──
 (defdom-transform :name "strip-script"
                   :selector "script"
                   :action remove
                   :description "no-JS browser: script tags are inert noise")
 
-(defdom-transform :name "strip-noscript"
+(defdom-transform :name "surface-noscript"
                   :selector "noscript"
                   :action unwrap
-                  :description "surface <noscript> content that's hidden behind JS")
+                  :description "reveal content the site hides behind JS")
 
-;; ── ads / trackers by obvious class ──────────────────────────────
-(defdom-transform :name "hide-ads-by-class"
+;; ── ads / trackers by obvious class ─────────────────────────────────
+(defdom-transform :name "hide-ads"
                   :selector ".ad"
                   :action remove)
 
@@ -38,10 +46,30 @@
                   :selector ".sponsored"
                   :action remove)
 
-;; ── accessibility scoring ────────────────────────────────────────
-;; Tag un-captioned images so downstream reader-mode can filter or
-;; annotate them.
-(defdom-transform :name "flag-images"
+;; ── combinator-aware: iframes that happen to sit inside an ad div, ──
+;; ── whose class we wouldn't otherwise target.                       ──
+(defdom-transform :name "strip-iframes-in-ads"
+                  :selector ".ad > iframe"
+                  :action remove)
+
+;; ── accessibility scoring ───────────────────────────────────────────
+;; Tag images sitting inside a <figure> as editorial (different from
+;; inline images). Descendant combinator picks up <img> at any depth
+;; under <figure>.
+(defdom-transform :name "flag-editorial-images"
+                  :selector "figure img"
+                  :action add-class
+                  :arg "nami-editorial")
+
+;; Universal-selector fallback for everything else.
+(defdom-transform :name "flag-all-images"
                   :selector "img"
                   :action add-class
                   :arg "nami-needs-alt-review")
+
+;; ── reader-mode hint: paragraphs that are immediate children of ──
+;; ── <article> get a class so downstream styling can pick them up.──
+(defdom-transform :name "reader-article-paragraphs"
+                  :selector "article > p"
+                  :action add-class
+                  :arg "reader-p")

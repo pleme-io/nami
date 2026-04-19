@@ -1,16 +1,17 @@
 //! Lisp-authored DOM transforms applied during page load.
 //!
-//! Reuses [`nami_core::transform::DomTransformSpec`] + [`DomAction`] as
-//! the spec surface so transforms authored once work against both the
-//! nami-core `Document` (e.g. in unit tests) and nami's own DOM. The
-//! execution engine is ported to nami's `NodeKind`/`Element` shape
-//! because the two DOM types haven't converged yet — the dedup arc is
-//! queued separately.
+//! Reuses [`nami_core::transform::DomTransformSpec`] + [`DomAction`] and
+//! the shared [`nami_core::selector::Selector`] so transforms authored
+//! in Lisp work the same whether they're applied to nami-core's DOM or
+//! nami's own. The execution engine is ported to nami's
+//! `NodeKind`/`Element` shape because the DOM-type dedup is a separate
+//! arc.
 //!
-//! Load user transforms at startup from `~/.config/nami/transforms.lisp`,
-//! apply them post-parse, pre-layout. See `TransformSet::load`.
+//! Selectors understood: `tag`, `.class`, `#id`, compound (`div.card`),
+//! descendant (`article p`), child (`ul > li`), universal (`*`).
 
 use crate::dom::{Document, Element, Node, NodeKind};
+use nami_core::selector::{Selector, SelectorNode};
 use nami_core::transform::{DomAction, DomTransformSpec, TransformHit, TransformReport};
 use std::path::Path;
 
@@ -50,44 +51,112 @@ impl TransformSet {
     }
 }
 
+/// A lightweight owned snapshot of an element's selector-relevant
+/// attributes. Built once per visited element during traversal.
+#[derive(Clone)]
+struct PathItem {
+    tag: String,
+    class_attr: String,
+    id: Option<String>,
+}
+
+impl PathItem {
+    fn from_element(el: &Element) -> Self {
+        Self {
+            tag: el.tag.clone(),
+            class_attr: el.attrs.get("class").cloned().unwrap_or_default(),
+            id: el.attrs.get("id").cloned(),
+        }
+    }
+}
+
+impl SelectorNode for PathItem {
+    fn tag(&self) -> &str {
+        &self.tag
+    }
+    fn has_class(&self, class: &str) -> bool {
+        self.class_attr.split_whitespace().any(|c| c == class)
+    }
+    fn id(&self) -> Option<&str> {
+        self.id.as_deref()
+    }
+}
+
+struct Compiled<'a> {
+    spec: &'a DomTransformSpec,
+    selector: Selector,
+}
+
 /// Apply a sequence of transforms to a document, in order.
 pub fn apply(doc: &mut Document, transforms: &[DomTransformSpec]) -> TransformReport {
     let mut report = TransformReport::default();
     for spec in transforms {
-        apply_one(&mut doc.root, spec, &mut report);
+        let selector = match Selector::parse(&spec.selector) {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!(
+                    "transform {} has invalid selector {:?}: {e}",
+                    spec.name,
+                    spec.selector
+                );
+                continue;
+            }
+        };
+        let compiled = Compiled { spec, selector };
+        let mut path: Vec<PathItem> = Vec::new();
+        apply_one(&mut doc.root, &compiled, &mut path, &mut report);
     }
     report
 }
 
-fn apply_one(node: &mut Node, spec: &DomTransformSpec, report: &mut TransformReport) {
-    // Depth-first: descendants first so structural mutations at a parent
-    // level see the post-transform subtree.
+fn apply_one(
+    node: &mut Node,
+    compiled: &Compiled<'_>,
+    path: &mut Vec<PathItem>,
+    report: &mut TransformReport,
+) {
+    // Push ourselves onto the path if we're an element.
+    let pushed = if let NodeKind::Element(el) = &node.kind {
+        path.push(PathItem::from_element(el));
+        true
+    } else {
+        false
+    };
+
+    // Depth-first recurse into element children with us on the path.
     if let NodeKind::Element(el) = &mut node.kind {
         for child in &mut el.children {
-            apply_one(child, spec, report);
+            apply_one(child, compiled, path, report);
         }
     }
 
-    match spec.action {
-        DomAction::Remove => {
-            if let NodeKind::Element(el) = &mut node.kind {
-                let before = el.children.len();
-                el.children.retain(|c| !matches_element(c, &spec.selector));
-                let removed = before - el.children.len();
-                for _ in 0..removed {
-                    report.applied.push(TransformHit {
-                        transform: spec.name.clone(),
-                        action: spec.action,
-                        tag: selector_tag(&spec.selector),
-                    });
+    let spec = compiled.spec;
+
+    if let NodeKind::Element(parent) = &mut node.kind {
+        match spec.action {
+            DomAction::Remove => {
+                let mut i = 0;
+                while i < parent.children.len() {
+                    if child_matches(&parent.children[i], path, compiled) {
+                        let child = parent.children.remove(i);
+                        let tag = match child.kind {
+                            NodeKind::Element(e) => e.tag,
+                            _ => String::new(),
+                        };
+                        report.applied.push(TransformHit {
+                            transform: spec.name.clone(),
+                            action: spec.action,
+                            tag,
+                        });
+                    } else {
+                        i += 1;
+                    }
                 }
             }
-        }
-        DomAction::Unwrap => {
-            if let NodeKind::Element(parent) = &mut node.kind {
+            DomAction::Unwrap => {
                 let mut new_children: Vec<Node> = Vec::with_capacity(parent.children.len());
                 for child in std::mem::take(&mut parent.children) {
-                    if matches_element(&child, &spec.selector) {
+                    if child_matches(&child, path, compiled) {
                         let (child_tag, child_children) = match child.kind {
                             NodeKind::Element(e) => (e.tag, e.children),
                             _ => (String::new(), Vec::new()),
@@ -104,15 +173,13 @@ fn apply_one(node: &mut Node, spec: &DomTransformSpec, report: &mut TransformRep
                 }
                 parent.children = new_children;
             }
-        }
-        DomAction::AddClass
-        | DomAction::RemoveClass
-        | DomAction::SetAttr
-        | DomAction::RemoveAttr
-        | DomAction::SetText => {
-            if let NodeKind::Element(parent) = &mut node.kind {
+            DomAction::AddClass
+            | DomAction::RemoveClass
+            | DomAction::SetAttr
+            | DomAction::RemoveAttr
+            | DomAction::SetText => {
                 for child in &mut parent.children {
-                    if matches_element(child, &spec.selector) {
+                    if child_matches(child, path, compiled) {
                         if let Some(hit) = apply_in_place(child, spec) {
                             report.applied.push(hit);
                         }
@@ -121,6 +188,20 @@ fn apply_one(node: &mut Node, spec: &DomTransformSpec, report: &mut TransformRep
             }
         }
     }
+
+    if pushed {
+        path.pop();
+    }
+}
+
+fn child_matches(child: &Node, path: &[PathItem], compiled: &Compiled<'_>) -> bool {
+    let NodeKind::Element(child_el) = &child.kind else {
+        return false;
+    };
+    let child_item = PathItem::from_element(child_el);
+    let mut full: Vec<&PathItem> = path.iter().collect();
+    full.push(&child_item);
+    compiled.selector.matches(&full)
 }
 
 fn apply_in_place(node: &mut Node, spec: &DomTransformSpec) -> Option<TransformHit> {
@@ -157,8 +238,7 @@ fn apply_in_place(node: &mut Node, spec: &DomTransformSpec) -> Option<TransformH
 
 fn add_class(el: &mut Element, class: &str) {
     let current = el.attrs.get("class").cloned().unwrap_or_default();
-    let already = current.split_whitespace().any(|c| c == class);
-    if already {
+    if current.split_whitespace().any(|c| c == class) {
         return;
     }
     let new_val = if current.is_empty() {
@@ -179,26 +259,6 @@ fn remove_class(el: &mut Element, class: &str) {
     } else {
         el.attrs.insert("class".to_owned(), filtered.join(" "));
     }
-}
-
-fn matches_element(node: &Node, selector: &str) -> bool {
-    let NodeKind::Element(el) = &node.kind else {
-        return false;
-    };
-    let sel = selector.trim();
-    if let Some(class) = sel.strip_prefix('.') {
-        el.attrs
-            .get("class")
-            .is_some_and(|classes| classes.split_whitespace().any(|c| c == class))
-    } else if let Some(id) = sel.strip_prefix('#') {
-        el.attrs.get("id").is_some_and(|v| v == id)
-    } else {
-        el.tag.eq_ignore_ascii_case(sel)
-    }
-}
-
-fn selector_tag(selector: &str) -> String {
-    selector.trim_start_matches(['.', '#']).to_owned()
 }
 
 #[cfg(test)]
@@ -252,6 +312,48 @@ mod tests {
         assert_eq!(count_tag(&doc, "div"), 0);
         assert_eq!(count_tag(&doc, "p"), 1);
         assert_eq!(report.applied.len(), 2);
+    }
+
+    #[test]
+    fn descendant_combinator_in_nami() {
+        // "article p" only strips <p> inside <article>.
+        let mut doc =
+            Document::parse(r#"<html><body><article><p>A</p></article><p>B</p></body></html>"#);
+        let set = TransformSet::from_str(
+            r#"(defdom-transform :name "x" :selector "article p" :action remove)"#,
+        )
+        .unwrap();
+        let report = set.apply(&mut doc);
+        assert_eq!(report.applied.len(), 1);
+        assert_eq!(count_tag(&doc, "p"), 1);
+    }
+
+    #[test]
+    fn child_combinator_in_nami() {
+        let mut doc = Document::parse(
+            r#"<html><body><ul><li>A</li><div><li>B</li></div></ul></body></html>"#,
+        );
+        let set = TransformSet::from_str(
+            r#"(defdom-transform :name "c" :selector "ul > li" :action remove)"#,
+        )
+        .unwrap();
+        let report = set.apply(&mut doc);
+        assert_eq!(report.applied.len(), 1);
+        assert_eq!(count_tag(&doc, "li"), 1);
+    }
+
+    #[test]
+    fn compound_selector_in_nami() {
+        let mut doc = Document::parse(
+            r#"<html><body><div class="card">keep</div><p class="card">strip</p></body></html>"#,
+        );
+        let set = TransformSet::from_str(
+            r#"(defdom-transform :name "x" :selector "p.card" :action remove)"#,
+        )
+        .unwrap();
+        set.apply(&mut doc);
+        assert_eq!(count_tag(&doc, "p"), 0);
+        assert_eq!(count_tag(&doc, "div"), 1);
     }
 
     #[test]
