@@ -728,10 +728,16 @@ impl Browser {
         }
 
         let set = crate::transform::TransformSet { specs: selected };
-        let report = if self.aliases.is_empty() {
+        let components = &self.substrate.components;
+        let report = if self.aliases.is_empty() && components.is_empty() {
             set.apply(doc)
         } else {
-            set.apply_with_aliases(doc, &self.aliases.registry(), &detections)
+            set.apply_with_aliases_and_components(
+                doc,
+                &self.aliases.registry(),
+                &detections,
+                components,
+            )
         };
         if !report.applied.is_empty() {
             tracing::info!("applied {} Lisp transforms to {url}", report.applied.len());

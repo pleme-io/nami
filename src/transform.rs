@@ -59,6 +59,31 @@ impl TransformSet {
         apply(doc, &resolved)
     }
 
+    /// Apply with alias resolution AND component expansion. Any transform
+    /// authored with `:component "Name"` + `:props …` has its `:arg`
+    /// filled in via the component registry before the apply engine
+    /// runs. When both aliases and components are empty this is
+    /// identical to `apply()`.
+    pub fn apply_with_aliases_and_components(
+        &self,
+        doc: &mut Document,
+        aliases: &AliasRegistry,
+        detections: &[nami_core::framework::Detection],
+        components: &nami_core::component::ComponentRegistry,
+    ) -> TransformReport {
+        let with_components = if components.is_empty() {
+            self.specs.clone()
+        } else {
+            nami_core::transform::resolve_components(&self.specs, components)
+        };
+        let fully_resolved = if aliases.is_empty() {
+            with_components
+        } else {
+            aliases.expand_transforms(&with_components, detections)
+        };
+        apply(doc, &fully_resolved)
+    }
+
     pub fn len(&self) -> usize {
         self.specs.len()
     }
@@ -576,5 +601,47 @@ mod tests {
     fn absent_transforms_file_yields_empty_set() {
         let set = TransformSet::load(Path::new("/nonexistent/path/transforms.lisp")).unwrap();
         assert!(set.is_empty());
+    }
+
+    #[test]
+    fn component_flavored_transform_splices_rendered_html() {
+        // A component that renders a reader-mode banner. The transform
+        // references it; the engine expands the component with :props,
+        // serializes to HTML, and splices via insert-before.
+        let mut registry = nami_core::component::ComponentRegistry::new();
+        registry.insert(nami_core::component::ComponentSpec {
+            name: "Banner".into(),
+            description: None,
+            props: vec!["title".into()],
+            template: r#"(div :class "banner" (h2 (@ title)))"#.into(),
+        });
+
+        let set = TransformSet::from_str(
+            r#"
+            (defdom-transform :name "inject-banner"
+                              :selector "article"
+                              :action insert-before
+                              :component "Banner"
+                              :props (("title" "Hello")))
+            "#,
+        )
+        .unwrap();
+
+        let mut doc = Document::parse(
+            r#"<html><body><main><article><p>ok</p></article></main></body></html>"#,
+        );
+        let aliases = AliasRegistry::new();
+        let report = set.apply_with_aliases_and_components(&mut doc, &aliases, &[], &registry);
+        assert_eq!(report.applied.len(), 1);
+
+        // The rendered banner is now a sibling of <article>.
+        assert_eq!(count_tag(&doc, "div"), 1);
+        assert_eq!(count_tag(&doc, "h2"), 1);
+        assert_eq!(count_tag(&doc, "article"), 1);
+        let banner = find_tag(&doc, "div").expect("banner div");
+        assert_eq!(
+            banner.attrs.get("class").map(String::as_str),
+            Some("banner")
+        );
     }
 }

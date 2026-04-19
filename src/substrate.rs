@@ -15,6 +15,7 @@
 //! the consumer.
 
 use nami_core::agent::{AgentRegistry, AgentSpec};
+use nami_core::component::{ComponentRegistry, ComponentSpec};
 use nami_core::derived::{DerivedRegistry, DerivedSpec};
 use nami_core::effect::{EffectRegistry, EffectSpec};
 use nami_core::plan::{PlanRegistry, PlanSpec};
@@ -35,6 +36,7 @@ pub struct Substrate {
     pub routes: RouteRegistry,
     pub queries: QueryRegistry,
     pub derived: DerivedRegistry,
+    pub components: ComponentRegistry,
 }
 
 impl Substrate {
@@ -81,6 +83,10 @@ impl Substrate {
         let mut derived = DerivedRegistry::new();
         derived.extend(derived_specs);
 
+        let component_specs: Vec<ComponentSpec> = nami_core::component::compile(src)?;
+        let mut components = ComponentRegistry::new();
+        components.extend(component_specs);
+
         Ok(Self {
             states,
             effects,
@@ -90,6 +96,7 @@ impl Substrate {
             routes,
             queries,
             derived,
+            components,
         })
     }
 
@@ -97,7 +104,7 @@ impl Substrate {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "{} state · {} effect · {} predicate · {} plan · {} agent · {} route · {} query · {} derived",
+            "{} state · {} effect · {} predicate · {} plan · {} agent · {} route · {} query · {} derived · {} component",
             self.states.len(),
             self.effects.len(),
             self.predicates.len(),
@@ -106,6 +113,7 @@ impl Substrate {
             self.routes.len(),
             self.queries.len(),
             self.derived.len(),
+            self.components.len(),
         )
     }
 
@@ -120,6 +128,7 @@ impl Substrate {
             && self.routes.is_empty()
             && self.queries.is_empty()
             && self.derived.is_empty()
+            && self.components.is_empty()
     }
 
     /// Produce a fresh [`StateStore`] seeded with this substrate's
@@ -171,6 +180,9 @@ mod tests {
             (defderived :name "visits-squared"
                         :inputs ("counter")
                         :compute "(* counter counter)")
+            (defcomponent :name "Banner"
+                          :props ("title")
+                          :template "(div :class \"banner\" (h2 (@ title)))")
         "#;
         let s = Substrate::from_str(src).unwrap();
         assert_eq!(s.states.len(), 1);
@@ -181,6 +193,7 @@ mod tests {
         assert_eq!(s.routes.len(), 1);
         assert_eq!(s.queries.len(), 1);
         assert_eq!(s.derived.len(), 1);
+        assert_eq!(s.components.len(), 1);
         assert!(!s.is_empty());
     }
 
