@@ -236,6 +236,17 @@ pub fn default_history_path() -> PathBuf {
 /// convention rather than macOS's Application Support default from `dirs::config_dir`.
 #[must_use]
 pub fn default_transforms_path() -> PathBuf {
+    config_file("transforms.lisp")
+}
+
+/// Default tatara-lisp scrapes file path — same discovery rules as
+/// [`default_transforms_path`].
+#[must_use]
+pub fn default_scrapes_path() -> PathBuf {
+    config_file("scrapes.lisp")
+}
+
+fn config_file(name: &str) -> PathBuf {
     let base = std::env::var("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .ok()
@@ -245,7 +256,7 @@ pub fn default_transforms_path() -> PathBuf {
                 .map(|h| PathBuf::from(h).join(".config"))
         })
         .unwrap_or_else(|| PathBuf::from("."));
-    base.join("nami").join("transforms.lisp")
+    base.join("nami").join(name)
 }
 
 #[cfg(test)]

@@ -67,6 +67,22 @@ enum Commands {
     },
     /// Start the MCP server (stdio transport).
     Mcp,
+    /// Scrape structured data from a page using a Lisp `(defscrape …)` file.
+    ///
+    /// Default config path: `$XDG_CONFIG_HOME/nami/scrapes.lisp`.
+    /// Output: one JSON object per line (JSONL) unless --json-array is passed.
+    Scrape {
+        url: String,
+        /// Path to a Lisp file of `(defscrape …)` forms.
+        #[arg(long, short = 'c')]
+        config: Option<std::path::PathBuf>,
+        /// Inline Lisp source (appended to file contents if both given).
+        #[arg(long, short = 'e')]
+        expr: Option<String>,
+        /// Wrap results in a JSON array instead of JSONL.
+        #[arg(long)]
+        json_array: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -140,6 +156,75 @@ fn main() -> anyhow::Result<()> {
                 if let Err(e) = mcp::run(cfg).await {
                     eprintln!("MCP server error: {e}");
                     std::process::exit(1);
+                }
+            });
+        }
+        Some(Commands::Scrape {
+            url,
+            config: scrape_config,
+            expr,
+            json_array,
+        }) => {
+            rt.block_on(async {
+                let fetcher = fetch::Fetcher::new(&cfg.network);
+                let scrapes_path = scrape_config
+                    .clone()
+                    .unwrap_or_else(config::default_scrapes_path);
+
+                let mut lisp_src = String::new();
+                if scrapes_path.exists() {
+                    match std::fs::read_to_string(&scrapes_path) {
+                        Ok(s) => lisp_src.push_str(&s),
+                        Err(e) => {
+                            eprintln!("nami: read {scrapes_path:?}: {e}");
+                            std::process::exit(2);
+                        }
+                    }
+                }
+                if let Some(extra) = expr.as_deref() {
+                    if !lisp_src.is_empty() {
+                        lisp_src.push('\n');
+                    }
+                    lisp_src.push_str(extra);
+                }
+                if lisp_src.trim().is_empty() {
+                    eprintln!(
+                        "nami: no (defscrape …) forms — pass -c <file> or -e '<lisp>', or put them at {scrapes_path:?}"
+                    );
+                    std::process::exit(2);
+                }
+
+                let specs = match nami_core::scrape::compile(&lisp_src) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("nami: parse scrapes: {e}");
+                        std::process::exit(2);
+                    }
+                };
+
+                match fetcher.fetch(&url).await {
+                    Ok(result) => {
+                        // Re-parse with nami-core's Document so scrape runs.
+                        let core_doc = nami_core::dom::Document::parse(&result.body);
+                        let hits = nami_core::scrape::scrape(&core_doc, &specs);
+                        if json_array {
+                            println!("{}", serde_json::to_string_pretty(&hits).unwrap());
+                        } else {
+                            for hit in &hits {
+                                println!("{}", serde_json::to_string(hit).unwrap());
+                            }
+                        }
+                        eprintln!(
+                            "[scrape] {} hits across {} spec(s) against {}",
+                            hits.len(),
+                            specs.len(),
+                            result.url
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!("nami: fetch: {e}");
+                        std::process::exit(2);
+                    }
                 }
             });
         }
