@@ -1,3 +1,8 @@
+// Scaffolding APIs (NodeHandle, LinkInfo, ImageInfo, the script
+// engine, keybinding types) are kept as reserved surface for the
+// GPU-chrome browser arc; silence dead_code until they wire up.
+#![allow(dead_code)]
+
 //! Nami (波) — GPU-rendered TUI browser.
 //!
 //! Full web rendering in a GPU-accelerated terminal interface:
