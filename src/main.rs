@@ -314,6 +314,22 @@ fn main() -> anyhow::Result<()> {
                     Ok(result) => {
                         // Re-parse with nami-core's Document so scrape runs.
                         let core_doc = nami_core::dom::Document::parse(&result.body);
+
+                        // Expand framework aliases if the user has any.
+                        let aliases_path = cfg
+                            .aliases_file
+                            .clone()
+                            .unwrap_or_else(config::default_aliases_path);
+                        let aliases = transform::AliasSet::load(&aliases_path)
+                            .unwrap_or_default();
+                        let specs = if aliases.is_empty() {
+                            specs
+                        } else {
+                            let detections = nami_core::framework::detect(&core_doc);
+                            let registry = aliases.registry();
+                            registry.expand_scrapes(&specs, &detections)
+                        };
+
                         let hits = nami_core::scrape::scrape(&core_doc, &specs);
                         if json_array {
                             println!("{}", serde_json::to_string_pretty(&hits).unwrap());
@@ -345,13 +361,25 @@ fn main() -> anyhow::Result<()> {
                     .unwrap_or_else(config::default_transforms_path);
                 let transforms =
                     transform::TransformSet::load(&transforms_path).unwrap_or_default();
+                let aliases_path = cfg
+                    .aliases_file
+                    .clone()
+                    .unwrap_or_else(config::default_aliases_path);
+                let aliases = transform::AliasSet::load(&aliases_path).unwrap_or_default();
 
                 match fetcher.fetch_page_with_css(&url).await {
                     Ok((result, css_texts)) => {
                         let mut doc = dom::Document::parse(&result.body);
 
                         if !transforms.is_empty() {
-                            let report = transforms.apply(&mut doc);
+                            let report = if aliases.is_empty() {
+                                transforms.apply(&mut doc)
+                            } else {
+                                let core_doc = nami_core::dom::Document::parse(&result.body);
+                                let detections = nami_core::framework::detect(&core_doc);
+                                let registry = aliases.registry();
+                                transforms.apply_with_aliases(&mut doc, &registry, &detections)
+                            };
                             eprintln!(
                                 "[transforms] {} applied to {}",
                                 report.applied.len(),

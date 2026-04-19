@@ -13,7 +13,7 @@ use crate::history::BrowsingHistory;
 use crate::input::{BrowserAction, InputHandler, Mode};
 use crate::render;
 use crate::tabs::{PageState, TabManager};
-use crate::transform::TransformSet;
+use crate::transform::{AliasSet, TransformSet};
 use crate::url_util;
 
 /// The main browser state.
@@ -46,6 +46,8 @@ pub struct Browser {
     pub editing_address: bool,
     /// Lisp-authored DOM transforms applied after parse, before layout.
     pub transforms: TransformSet,
+    /// Framework-aware selector aliases resolved per-page.
+    pub aliases: AliasSet,
 }
 
 impl Browser {
@@ -86,6 +88,26 @@ impl Browser {
             }
         };
 
+        let aliases_path = config
+            .aliases_file
+            .clone()
+            .unwrap_or_else(crate::config::default_aliases_path);
+        let aliases = match AliasSet::load(&aliases_path) {
+            Ok(set) => {
+                if !set.is_empty() {
+                    tracing::info!(
+                        "loaded {} framework aliases from {aliases_path:?}",
+                        set.len()
+                    );
+                }
+                set
+            }
+            Err(e) => {
+                tracing::warn!("failed to load aliases {aliases_path:?}: {e}");
+                AliasSet::default()
+            }
+        };
+
         let tabs = match initial_url {
             Some(url) => {
                 let normalized = url_util::normalize_input(url, &config.search_engine);
@@ -115,6 +137,7 @@ impl Browser {
             address_bar: String::new(),
             editing_address: false,
             transforms,
+            aliases,
         }
     }
 
@@ -163,7 +186,17 @@ impl Browser {
                 // Apply Lisp-authored DOM transforms post-parse, pre-layout.
                 // Absent/empty transforms set is the common case and a no-op.
                 if !self.transforms.is_empty() {
-                    let report = self.transforms.apply(&mut doc);
+                    let report = if self.aliases.is_empty() {
+                        self.transforms.apply(&mut doc)
+                    } else {
+                        // Alias-aware path: re-parse with nami-core so
+                        // framework::detect() runs, then expand @-aliases.
+                        let core_doc = nami_core::dom::Document::parse(&result.body);
+                        let detections = nami_core::framework::detect(&core_doc);
+                        let registry = self.aliases.registry();
+                        self.transforms
+                            .apply_with_aliases(&mut doc, &registry, &detections)
+                    };
                     if !report.applied.is_empty() {
                         tracing::info!(
                             "applied {} Lisp DOM transforms to {normalized}",

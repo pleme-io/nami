@@ -11,6 +11,7 @@
 //! descendant (`article p`), child (`ul > li`), universal (`*`).
 
 use crate::dom::{Document, Element, Node, NodeKind};
+use nami_core::alias::{AliasRegistry, AliasSpec};
 use nami_core::selector::{Selector, SelectorNode};
 use nami_core::transform::{DomAction, DomTransformSpec, TransformHit, TransformReport};
 use std::path::Path;
@@ -42,12 +43,65 @@ impl TransformSet {
         apply(doc, &self.specs)
     }
 
+    /// Apply, with alias resolution against a framework-detection list.
+    /// `@foo` references in selectors are substituted per-framework
+    /// before the engine runs.
+    pub fn apply_with_aliases(
+        &self,
+        doc: &mut Document,
+        aliases: &AliasRegistry,
+        detections: &[nami_core::framework::Detection],
+    ) -> TransformReport {
+        if aliases.is_empty() {
+            return self.apply(doc);
+        }
+        let resolved = aliases.expand_transforms(&self.specs, detections);
+        apply(doc, &resolved)
+    }
+
     pub fn len(&self) -> usize {
         self.specs.len()
     }
 
     pub fn is_empty(&self) -> bool {
         self.specs.is_empty()
+    }
+}
+
+/// A bundle of Lisp-authored framework aliases.
+#[derive(Debug, Clone, Default)]
+pub struct AliasSet {
+    pub specs: Vec<AliasSpec>,
+}
+
+impl AliasSet {
+    pub fn from_str(src: &str) -> Result<Self, String> {
+        let specs = nami_core::alias::compile(src)?;
+        Ok(Self { specs })
+    }
+
+    pub fn load(path: &Path) -> Result<Self, String> {
+        if !path.exists() {
+            return Ok(Self::default());
+        }
+        let src = std::fs::read_to_string(path).map_err(|e| format!("read {path:?}: {e}"))?;
+        Self::from_str(&src)
+    }
+
+    pub fn len(&self) -> usize {
+        self.specs.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.specs.is_empty()
+    }
+
+    /// Materialise a ready-to-use registry.
+    #[must_use]
+    pub fn registry(&self) -> AliasRegistry {
+        let mut reg = AliasRegistry::new();
+        reg.extend(self.specs.iter().cloned());
+        reg
     }
 }
 
