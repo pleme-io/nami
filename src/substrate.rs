@@ -18,6 +18,7 @@ use nami_core::agent::{AgentRegistry, AgentSpec};
 use nami_core::effect::{EffectRegistry, EffectSpec};
 use nami_core::plan::{PlanRegistry, PlanSpec};
 use nami_core::predicate::{PredicateRegistry, PredicateSpec};
+use nami_core::route::{RouteRegistry, RouteSpec};
 use nami_core::store::{StateSpec, StateStore};
 use std::path::Path;
 
@@ -29,6 +30,7 @@ pub struct Substrate {
     pub predicates: PredicateRegistry,
     pub plans: PlanRegistry,
     pub agents: AgentRegistry,
+    pub routes: RouteRegistry,
 }
 
 impl Substrate {
@@ -63,12 +65,17 @@ impl Substrate {
         let mut agents = AgentRegistry::new();
         agents.extend(agent_specs);
 
+        let route_specs: Vec<RouteSpec> = nami_core::route::compile(src)?;
+        let mut routes = RouteRegistry::new();
+        routes.extend(route_specs);
+
         Ok(Self {
             states,
             effects,
             predicates,
             plans,
             agents,
+            routes,
         })
     }
 
@@ -76,12 +83,13 @@ impl Substrate {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "{} state · {} effect · {} predicate · {} plan · {} agent",
+            "{} state · {} effect · {} predicate · {} plan · {} agent · {} route",
             self.states.len(),
             self.effects.len(),
             self.predicates.len(),
             self.plans.len(),
             self.agents.len(),
+            self.routes.len(),
         )
     }
 
@@ -93,6 +101,7 @@ impl Substrate {
             && self.predicates.is_empty()
             && self.plans.is_empty()
             && self.agents.is_empty()
+            && self.routes.is_empty()
     }
 
     /// Produce a fresh [`StateStore`] seeded with this substrate's
@@ -134,6 +143,9 @@ mod tests {
                       :on "page-load"
                       :when "has-article"
                       :apply "reader-mode")
+            (defroute :pattern "/users/:id"
+                      :bind (("user-id" "id"))
+                      :on-match ("load-user"))
         "#;
         let s = Substrate::from_str(src).unwrap();
         assert_eq!(s.states.len(), 1);
@@ -141,6 +153,7 @@ mod tests {
         assert_eq!(s.predicates.len(), 1);
         assert_eq!(s.plans.len(), 1);
         assert_eq!(s.agents.len(), 1);
+        assert_eq!(s.routes.len(), 1);
         assert!(!s.is_empty());
     }
 

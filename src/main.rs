@@ -82,6 +82,9 @@ enum Commands {
         #[arg(long, default_value = "80")]
         width: u32,
     },
+    /// Show which route (if any) matches a URL, plus extracted params
+    /// and the on-match action list. Diagnostic — doesn't fetch.
+    Route { url: String },
     /// Dissect any page into its Lisp-space representation.
     ///
     /// Prints (in order):
@@ -266,6 +269,36 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             });
+        }
+        Some(Commands::Route { url }) => {
+            let extensions_path = cfg
+                .extensions_file
+                .clone()
+                .unwrap_or_else(config::default_extensions_path);
+            let substrate = substrate::Substrate::load(&extensions_path).unwrap_or_default();
+            match substrate.routes.match_url(&url) {
+                Some(m) => {
+                    println!("route:     {}", m.route);
+                    println!("url:       {url}");
+                    println!("params:");
+                    for (k, v) in &m.params {
+                        println!("  {k} = {v}");
+                    }
+                    println!("bindings:");
+                    for (cell, param) in &m.bindings {
+                        println!("  {cell} ← :{param}");
+                    }
+                    println!("on-match: {}", m.on_match.join(", "));
+                }
+                None => {
+                    println!("no route matched {url}");
+                    if !substrate.routes.is_empty() {
+                        println!("defined routes: {}", substrate.routes.len());
+                    } else {
+                        println!("no routes defined in {extensions_path:?}");
+                    }
+                }
+            }
         }
         Some(Commands::Dissect {
             url,

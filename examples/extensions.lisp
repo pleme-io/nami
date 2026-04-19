@@ -58,3 +58,16 @@
           :on "page-load"
           :when "has-any-ad"
           :apply "hide-ads")
+
+;; ── routes: URL-pattern → extract params + fire transforms ─────
+;; Resolved on every navigate BEFORE effects run, so path params
+;; are already in the store when effect bodies evaluate.
+(defroute :pattern "/users/:id"
+          :bind (("current-user-id" "id"))
+          :on-match ("hide-ads"))
+
+(defroute :pattern "/posts/:year/:month/:slug"
+          :bind (("post-year" "year")
+                 ("post-month" "month")
+                 ("post-slug" "slug"))
+          :on-match ("reader-mode"))

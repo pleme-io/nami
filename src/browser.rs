@@ -590,6 +590,30 @@ impl Browser {
             return;
         }
 
+        // Phase 0 — route matching. Write extracted params into the
+        // state store BEFORE effects run so `(defeffect …)` bodies
+        // can read them via bound symbols. Route-matched on-match
+        // names merge into the transform-selection pass below.
+        let mut route_on_match: Vec<String> = Vec::new();
+        if !self.substrate.routes.is_empty() {
+            if let Some(m) = self.substrate.routes.match_url(url) {
+                // Write :bind pairs → state store.
+                for (cell, param) in &m.bindings {
+                    if let Some(val) = m.params.get(param) {
+                        self.state_store
+                            .set(cell, serde_json::Value::String(val.clone()));
+                    }
+                }
+                tracing::info!(
+                    "route '{}' matched {url} ({} params, {} on-match)",
+                    m.route,
+                    m.params.len(),
+                    m.on_match.len()
+                );
+                route_on_match = m.on_match;
+            }
+        }
+
         // We need nami-core's doc only when aliases, predicates, or
         // agents need to read it. Skip the second parse otherwise.
         let need_core = substrate_live || !self.aliases.is_empty();
@@ -642,12 +666,15 @@ impl Browser {
             (Vec::new(), Vec::new())
         };
 
-        // Agent-decided transforms first; if none fired, fall back to
-        // everything in transforms.lisp (preserves prior behaviour).
-        let selected: Vec<_> = if agent_decided.is_empty() {
+        // Merge agent-decided + route-matched on-match names. If neither
+        // produced anything, fall back to every transform in
+        // transforms.lisp (preserves prior behaviour).
+        let mut decided_names: Vec<String> = route_on_match;
+        decided_names.extend(agent_decided);
+        let selected: Vec<_> = if decided_names.is_empty() {
             self.transforms.specs.clone()
         } else {
-            agent_decided
+            decided_names
                 .iter()
                 .filter_map(|name| {
                     self.transforms
