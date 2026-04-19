@@ -13,9 +13,7 @@ pub enum PageState {
     /// Tab has no content yet.
     Blank,
     /// Page is being loaded.
-    Loading {
-        url: String,
-    },
+    Loading { url: String },
     /// Page is fully loaded.
     Loaded {
         url: String,
@@ -23,10 +21,7 @@ pub enum PageState {
         html: String,
     },
     /// Page load failed.
-    Error {
-        url: String,
-        error: String,
-    },
+    Error { url: String, error: String },
 }
 
 /// A single browser tab.
@@ -115,9 +110,9 @@ impl Tab {
     pub fn url(&self) -> &str {
         match &self.page_state {
             PageState::Blank => "about:blank",
-            PageState::Loading { url } | PageState::Loaded { url, .. } | PageState::Error { url, .. } => {
-                url.as_str()
-            }
+            PageState::Loading { url }
+            | PageState::Loaded { url, .. }
+            | PageState::Error { url, .. } => url.as_str(),
         }
     }
 
@@ -415,7 +410,10 @@ mod tests {
     #[test]
     fn tab_scroll() {
         let mut tab = Tab::new();
-        tab.set_loaded("https://example.com", "<html><body><p>Content</p></body></html>".to_string());
+        tab.set_loaded(
+            "https://example.com",
+            "<html><body><p>Content</p></body></html>".to_string(),
+        );
         tab.compute_layout(800.0);
 
         tab.scroll_down(100.0, 600.0);

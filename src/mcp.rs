@@ -3,13 +3,14 @@
 //! Exposes browser tools over the Model Context Protocol (stdio transport),
 //! allowing AI assistants to navigate pages, extract content, and manage bookmarks.
 
-use kaname::rmcp;
 use kaname::ToolResponse;
+use kaname::rmcp;
 use rmcp::{
+    ErrorData as McpError, ServerHandler,
     handler::server::router::tool::ToolRouter,
     handler::server::wrapper::Parameters,
     model::{CallToolResult, ServerCapabilities, ServerInfo},
-    tool, tool_handler, tool_router, ErrorData as McpError, ServerHandler,
+    tool, tool_handler, tool_router,
 };
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -194,9 +195,7 @@ impl NamiMcpServer {
         ))
     }
 
-    #[tool(
-        description = "Extract text content from a page. Optionally filter by CSS selector."
-    )]
+    #[tool(description = "Extract text content from a page. Optionally filter by CSS selector.")]
     async fn get_text(
         &self,
         Parameters(req): Parameters<GetTextRequest>,
@@ -282,7 +281,7 @@ impl ServerHandler for NamiMcpServer {
 
 /// Run the MCP server on stdio.
 pub async fn run(config: config::NamiConfig) -> Result<(), Box<dyn std::error::Error>> {
-    use rmcp::{transport::stdio, ServiceExt};
+    use rmcp::{ServiceExt, transport::stdio};
 
     let service = NamiMcpServer::new(config);
     let server = service.serve(stdio()).await?;

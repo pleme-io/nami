@@ -73,9 +73,7 @@ impl NamiScriptEngine {
         });
 
         // Register nami.get_text() — returns empty string (placeholder for live DOM)
-        engine.register_fn("nami_get_text", || -> String {
-            String::new()
-        });
+        engine.register_fn("nami_get_text", || -> String { String::new() });
 
         Self {
             engine,
@@ -111,7 +109,9 @@ impl NamiScriptEngine {
         };
 
         let script = match event {
-            ScriptEvent::OnKey(key) => format!("if is_def_fn(\"{hook_name}\", 1) {{ {hook_name}(\"{key}\"); }}"),
+            ScriptEvent::OnKey(key) => {
+                format!("if is_def_fn(\"{hook_name}\", 1) {{ {hook_name}(\"{key}\"); }}")
+            }
             _ => format!("if is_def_fn(\"{hook_name}\", 0) {{ {hook_name}(); }}"),
         };
 

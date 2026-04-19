@@ -362,11 +362,7 @@ impl Stylesheet {
 
     /// Compute style for a full element (including class/ID matching).
     #[must_use]
-    pub fn compute_style_for_element(
-        &self,
-        elem: &Element,
-        base: &ComputedStyle,
-    ) -> ComputedStyle {
+    pub fn compute_style_for_element(&self, elem: &Element, base: &ComputedStyle) -> ComputedStyle {
         let mut style = base.clone();
         let declarations = self.matching_declarations_for_element(elem);
 
@@ -1072,15 +1068,11 @@ mod tests {
 
         let p_decls = sheet.matching_declarations("p");
         assert!(!p_decls.is_empty());
-        assert!(p_decls
-            .iter()
-            .any(|d| d.property == "color"));
+        assert!(p_decls.iter().any(|d| d.property == "color"));
 
         let div_decls = sheet.matching_declarations("div");
         assert!(!div_decls.is_empty());
-        assert!(div_decls
-            .iter()
-            .any(|d| d.property == "color"));
+        assert!(div_decls.iter().any(|d| d.property == "color"));
     }
 
     #[test]

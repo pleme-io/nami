@@ -21,15 +21,9 @@ pub type Result<T> = std::result::Result<T, LayoutError>;
 #[derive(Debug, Clone)]
 pub enum BoxContent {
     /// An element box.
-    Element {
-        tag: String,
-        style: ComputedStyle,
-    },
+    Element { tag: String, style: ComputedStyle },
     /// A text run within an element.
-    Text {
-        text: String,
-        style: ComputedStyle,
-    },
+    Text { text: String, style: ComputedStyle },
 }
 
 /// A positioned box in the layout tree.
@@ -101,11 +95,7 @@ impl LayoutTree {
             collect_layout_boxes(&taffy, root, 0.0, 0.0, &meta_map, &mut boxes);
         }
 
-        tracing::debug!(
-            box_count = boxes.len(),
-            viewport_width,
-            "layout computed"
-        );
+        tracing::debug!(box_count = boxes.len(), viewport_width, "layout computed");
 
         Self { boxes }
     }

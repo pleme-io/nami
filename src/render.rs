@@ -73,7 +73,11 @@ pub struct RenderedPage {
 /// text output with structural formatting. The layout tree is used
 /// for positional information when available.
 #[must_use]
-pub fn render_document(doc: &Document, _layout: Option<&LayoutTree>, viewport_width: u32) -> RenderedPage {
+pub fn render_document(
+    doc: &Document,
+    _layout: Option<&LayoutTree>,
+    viewport_width: u32,
+) -> RenderedPage {
     let title = doc.title().unwrap_or("Untitled").to_string();
     let mut lines: Vec<StyledLine> = Vec::new();
     let default_style = ComputedStyle {
@@ -82,7 +86,15 @@ pub fn render_document(doc: &Document, _layout: Option<&LayoutTree>, viewport_wi
     };
 
     // Walk the DOM and build styled lines.
-    render_node(&doc.root, &default_style, &mut lines, 0, viewport_width, false, None);
+    render_node(
+        &doc.root,
+        &default_style,
+        &mut lines,
+        0,
+        viewport_width,
+        false,
+        None,
+    );
 
     let total_lines = lines.len();
 
@@ -144,11 +156,33 @@ fn render_node(
 
             let is_block = matches!(
                 elem.tag.as_str(),
-                "div" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
-                    | "section" | "article" | "main" | "header" | "footer"
-                    | "nav" | "aside" | "ul" | "ol" | "blockquote"
-                    | "pre" | "form" | "table" | "tr" | "dl"
-                    | "figure" | "figcaption" | "details" | "summary"
+                "div"
+                    | "p"
+                    | "h1"
+                    | "h2"
+                    | "h3"
+                    | "h4"
+                    | "h5"
+                    | "h6"
+                    | "section"
+                    | "article"
+                    | "main"
+                    | "header"
+                    | "footer"
+                    | "nav"
+                    | "aside"
+                    | "ul"
+                    | "ol"
+                    | "blockquote"
+                    | "pre"
+                    | "form"
+                    | "table"
+                    | "tr"
+                    | "dl"
+                    | "figure"
+                    | "figcaption"
+                    | "details"
+                    | "summary"
             );
 
             // Compute style for this element.
@@ -438,9 +472,7 @@ pub fn render_status_bar(
         String::new()
     };
 
-    format!(
-        "\x1b[7m {mode} | {url} {status}{blocked} | {tab_info} \x1b[0m"
-    )
+    format!("\x1b[7m {mode} | {url} {status}{blocked} | {tab_info} \x1b[0m")
 }
 
 /// Render a tab bar line.
@@ -449,7 +481,11 @@ pub fn render_tab_bar(tabs: &[(&str, bool)]) -> String {
     let mut out = String::new();
     for (i, (title, active)) in tabs.iter().enumerate() {
         if *active {
-            out.push_str(&format!("\x1b[7m [{}: {}] \x1b[0m", i + 1, truncate(title, 20)));
+            out.push_str(&format!(
+                "\x1b[7m [{}: {}] \x1b[0m",
+                i + 1,
+                truncate(title, 20)
+            ));
         } else {
             out.push_str(&format!("  {}: {}  ", i + 1, truncate(title, 20)));
         }
@@ -619,9 +655,8 @@ mod tests {
 
     #[test]
     fn render_with_links() {
-        let doc = Document::parse(
-            r#"<html><body><a href="https://example.com">Click</a></body></html>"#,
-        );
+        let doc =
+            Document::parse(r#"<html><body><a href="https://example.com">Click</a></body></html>"#);
         let page = render_document(&doc, None, 80);
         let text = to_plain_text(&page);
         assert!(text.contains("Click"));
@@ -630,9 +665,8 @@ mod tests {
 
     #[test]
     fn render_headings() {
-        let doc = Document::parse(
-            "<html><body><h1>Big</h1><h2>Medium</h2><h3>Small</h3></body></html>",
-        );
+        let doc =
+            Document::parse("<html><body><h1>Big</h1><h2>Medium</h2><h3>Small</h3></body></html>");
         let page = render_document(&doc, None, 80);
         let text = to_plain_text(&page);
         assert!(text.contains("# Big"));

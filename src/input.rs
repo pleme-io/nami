@@ -27,22 +27,58 @@ pub struct KeyBinding {
 pub fn default_bindings() -> Vec<KeyBinding> {
     vec![
         // Normal mode navigation
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::J), action: "scroll_down".into() },
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::K), action: "scroll_up".into() },
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::H), action: "scroll_left".into() },
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::L), action: "scroll_right".into() },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::J),
+            action: "scroll_down".into(),
+        },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::K),
+            action: "scroll_up".into(),
+        },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::H),
+            action: "scroll_left".into(),
+        },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::L),
+            action: "scroll_right".into(),
+        },
         // Ctrl shortcuts
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::T), action: "new_tab".into() },
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::W), action: "close_tab".into() },
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::Q), action: "quit".into() },
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::D), action: "half_page_down".into() },
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::U), action: "half_page_up".into() },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::T),
+            action: "new_tab".into(),
+        },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::W),
+            action: "close_tab".into(),
+        },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::Q),
+            action: "quit".into(),
+        },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::D),
+            action: "half_page_down".into(),
+        },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::CTRL, AwaseKey::U),
+            action: "half_page_up".into(),
+        },
         // Follow mode
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::F), action: "follow_link".into() },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::F),
+            action: "follow_link".into(),
+        },
         // Search
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::Slash), action: "search_forward".into() },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::NONE, AwaseKey::Slash),
+            action: "search_forward".into(),
+        },
         // Bookmarks
-        KeyBinding { hotkey: Hotkey::new(AwaseMods::SHIFT, AwaseKey::B), action: "show_bookmarks".into() },
+        KeyBinding {
+            hotkey: Hotkey::new(AwaseMods::SHIFT, AwaseKey::B),
+            action: "show_bookmarks".into(),
+        },
     ]
 }
 
@@ -191,7 +227,13 @@ impl InputHandler {
             Mode::Normal => "NORMAL",
             Mode::Insert => "INSERT",
             Mode::Command => "COMMAND",
-            Mode::Search => if self.search_forward { "SEARCH /" } else { "SEARCH ?" },
+            Mode::Search => {
+                if self.search_forward {
+                    "SEARCH /"
+                } else {
+                    "SEARCH ?"
+                }
+            }
             Mode::Follow => "FOLLOW",
         }
     }
@@ -211,9 +253,7 @@ impl InputHandler {
     pub fn handle_special_key(&mut self, key: SpecialKey) -> BrowserAction {
         match self.mode {
             Mode::Normal => self.handle_normal_special(key),
-            Mode::Insert | Mode::Command | Mode::Search => {
-                self.handle_input_special(key)
-            }
+            Mode::Insert | Mode::Command | Mode::Search => self.handle_input_special(key),
             Mode::Follow => {
                 if key == SpecialKey::Escape {
                     self.mode = Mode::Normal;
@@ -599,8 +639,14 @@ mod tests {
     fn normal_mode_scroll() {
         let mut handler = InputHandler::new();
         assert_eq!(handler.mode(), Mode::Normal);
-        assert_eq!(handler.handle_key('j', false, false), BrowserAction::ScrollDown(3));
-        assert_eq!(handler.handle_key('k', false, false), BrowserAction::ScrollUp(3));
+        assert_eq!(
+            handler.handle_key('j', false, false),
+            BrowserAction::ScrollDown(3)
+        );
+        assert_eq!(
+            handler.handle_key('k', false, false),
+            BrowserAction::ScrollUp(3)
+        );
     }
 
     #[test]
@@ -689,7 +735,10 @@ mod tests {
     fn ctrl_keys_in_normal() {
         let mut handler = InputHandler::new();
         assert_eq!(handler.handle_key('t', true, false), BrowserAction::NewTab);
-        assert_eq!(handler.handle_key('w', true, false), BrowserAction::CloseTab);
+        assert_eq!(
+            handler.handle_key('w', true, false),
+            BrowserAction::CloseTab
+        );
         assert_eq!(handler.handle_key('q', true, false), BrowserAction::Quit);
     }
 

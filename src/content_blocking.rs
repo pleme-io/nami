@@ -130,20 +130,32 @@ impl ContentBlocker {
         let domain = extract_domain(url);
 
         // Check exception rules first.
-        if self.exception_domains.iter().any(|d| domain_matches(&domain, d)) {
+        if self
+            .exception_domains
+            .iter()
+            .any(|d| domain_matches(&domain, d))
+        {
             self.stats.allowed += 1;
             return false;
         }
 
         // Check domain blocks.
-        if self.blocked_domains.iter().any(|d| domain_matches(&domain, d)) {
+        if self
+            .blocked_domains
+            .iter()
+            .any(|d| domain_matches(&domain, d))
+        {
             self.stats.blocked += 1;
             tracing::debug!(url, "blocked by domain rule");
             return true;
         }
 
         // Check pattern blocks.
-        if self.blocked_patterns.iter().any(|p| url.contains(p.as_str())) {
+        if self
+            .blocked_patterns
+            .iter()
+            .any(|p| url.contains(p.as_str()))
+        {
             self.stats.blocked += 1;
             tracing::debug!(url, "blocked by pattern rule");
             return true;
@@ -276,14 +288,19 @@ mod tests {
     #[test]
     fn exception_rules() {
         let mut blocker = ContentBlocker::new(&test_config());
-        blocker.exception_domains.push("google-analytics.com".to_string());
+        blocker
+            .exception_domains
+            .push("google-analytics.com".to_string());
         assert!(!blocker.should_block("https://google-analytics.com/collect"));
     }
 
     #[test]
     fn extract_domain_from_urls() {
         assert_eq!(extract_domain("https://example.com/path"), "example.com");
-        assert_eq!(extract_domain("http://sub.example.com:8080/"), "sub.example.com");
+        assert_eq!(
+            extract_domain("http://sub.example.com:8080/"),
+            "sub.example.com"
+        );
         assert_eq!(extract_domain("https://example.com"), "example.com");
     }
 

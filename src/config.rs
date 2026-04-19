@@ -25,6 +25,10 @@ pub struct NamiConfig {
     pub bookmarks_file: Option<PathBuf>,
     #[serde(default)]
     pub history_file: Option<PathBuf>,
+    /// Path to a tatara-lisp file containing `(defdom-transform …)` forms.
+    /// Defaults to `~/.config/nami/transforms.lisp` when absent.
+    #[serde(default)]
+    pub transforms_file: Option<PathBuf>,
 }
 
 /// Appearance settings.
@@ -101,6 +105,7 @@ impl Default for NamiConfig {
             content_blocking: ContentBlockingConfig::default(),
             bookmarks_file: None,
             history_file: None,
+            transforms_file: None,
         }
     }
 }
@@ -224,6 +229,23 @@ pub fn default_history_path() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
         .join("nami")
         .join("history.json")
+}
+
+/// Default tatara-lisp transforms file path: `$XDG_CONFIG_HOME/nami/transforms.lisp`
+/// or `$HOME/.config/nami/transforms.lisp`. Matches shikumi's config discovery
+/// convention rather than macOS's Application Support default from `dirs::config_dir`.
+#[must_use]
+pub fn default_transforms_path() -> PathBuf {
+    let base = std::env::var("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .ok()
+        .or_else(|| {
+            std::env::var("HOME")
+                .ok()
+                .map(|h| PathBuf::from(h).join(".config"))
+        })
+        .unwrap_or_else(|| PathBuf::from("."));
+    base.join("nami").join("transforms.lisp")
 }
 
 #[cfg(test)]

@@ -105,7 +105,9 @@ impl Bookmarks {
             .filter(|b| {
                 b.url.to_lowercase().contains(&query_lower)
                     || b.title.to_lowercase().contains(&query_lower)
-                    || b.tags.iter().any(|t| t.to_lowercase().contains(&query_lower))
+                    || b.tags
+                        .iter()
+                        .any(|t| t.to_lowercase().contains(&query_lower))
             })
             .collect()
     }
@@ -123,11 +125,7 @@ impl Bookmarks {
     /// Get all unique tags.
     #[must_use]
     pub fn tags(&self) -> Vec<String> {
-        let mut tags: Vec<String> = self
-            .bookmarks
-            .iter()
-            .flat_map(|b| b.tags.clone())
-            .collect();
+        let mut tags: Vec<String> = self.bookmarks.iter().flat_map(|b| b.tags.clone()).collect();
         tags.sort();
         tags.dedup();
         tags
@@ -195,8 +193,16 @@ mod tests {
     #[test]
     fn search_bookmarks() {
         let mut bm = test_bookmarks();
-        bm.add("https://rust-lang.org", "Rust Language", vec!["programming".into()]);
-        bm.add("https://example.com", "Example Site", vec!["reference".into()]);
+        bm.add(
+            "https://rust-lang.org",
+            "Rust Language",
+            vec!["programming".into()],
+        );
+        bm.add(
+            "https://example.com",
+            "Example Site",
+            vec!["reference".into()],
+        );
 
         let results = bm.search("rust");
         assert_eq!(results.len(), 1);

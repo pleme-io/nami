@@ -184,6 +184,7 @@ dependencies = [
  "madori",
  "markup5ever",
  "mojiban",
+ "nami-core",
  "pollster",
  "reqwest",
  "schemars 1.2.1",
@@ -369,6 +370,20 @@ dependencies = [
  "radium",
  "tap",
  "wyz",
+]
+
+[[package]]
+name = "blake3"
+version = "1.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d2d5991425dfd0785aed03aedcf0b321d61975c9b5b3689c774a2610ae0b51e"
+dependencies = [
+ "arrayref",
+ "arrayvec",
+ "cc",
+ "cfg-if",
+ "constant_time_eq",
+ "cpufeatures",
 ]
 
 [[package]]
@@ -687,6 +702,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "constant_time_eq"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
+
+[[package]]
 name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -795,6 +816,15 @@ dependencies = [
  "unicode-linebreak",
  "unicode-script",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "cpufeatures"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b2a41393f66f16b0823bb79094d54ac5fbd34ab292ddafb9a0456ac9f87d201"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -2454,6 +2484,23 @@ dependencies = [
  "strum",
  "thiserror 2.0.18",
  "unicode-ident",
+]
+
+[[package]]
+name = "nami-core"
+version = "0.1.0"
+source = "git+ssh://git@github.com/pleme-io/nami-core?branch=main#17f31fb6f60c4fc29641717aa3a467ce41e2d3e7"
+dependencies = [
+ "html5ever",
+ "lightningcss",
+ "markup5ever",
+ "serde",
+ "serde_json",
+ "taffy",
+ "tatara-lisp",
+ "thiserror 2.0.18",
+ "tracing",
+ "url",
 ]
 
 [[package]]
@@ -4494,6 +4541,28 @@ name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
+
+[[package]]
+name = "tatara-lisp"
+version = "0.2.0"
+source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+dependencies = [
+ "blake3",
+ "serde",
+ "serde_json",
+ "tatara-lisp-derive",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "tatara-lisp-derive"
+version = "0.2.0"
+source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
 
 [[package]]
 name = "tempfile"

@@ -6,7 +6,7 @@
 use html5ever::parse_document;
 use html5ever::tendril::TendrilSink;
 use html5ever::tree_builder::TreeSink;
-use markup5ever::{namespace_url, Attribute, QualName};
+use markup5ever::{Attribute, QualName, namespace_url};
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 
@@ -129,11 +129,8 @@ impl DomSink {
                 children: Vec::new(),
             }),
         };
-        let doc_qualname = QualName::new(
-            None,
-            html5ever::ns!(html),
-            html5ever::local_name!("html"),
-        );
+        let doc_qualname =
+            QualName::new(None, html5ever::ns!(html), html5ever::local_name!("html"));
         Self {
             inner: UnsafeCell::new(DomSinkInner {
                 nodes: vec![doc_node],
@@ -212,7 +209,10 @@ impl DomSink {
 impl TreeSink for DomSink {
     type Handle = usize;
     type Output = Self;
-    type ElemName<'a> = &'a QualName where Self: 'a;
+    type ElemName<'a>
+        = &'a QualName
+    where
+        Self: 'a;
 
     fn finish(self) -> Self::Output {
         self
@@ -627,14 +627,8 @@ fn collect_images(node: &Node, images: &mut Vec<ImageInfo>) {
         if elem.tag == "img" {
             let src = elem.attrs.get("src").cloned().unwrap_or_default();
             let alt = elem.attrs.get("alt").cloned().unwrap_or_default();
-            let width = elem
-                .attrs
-                .get("width")
-                .and_then(|v| v.parse::<u32>().ok());
-            let height = elem
-                .attrs
-                .get("height")
-                .and_then(|v| v.parse::<u32>().ok());
+            let width = elem.attrs.get("width").and_then(|v| v.parse::<u32>().ok());
+            let height = elem.attrs.get("height").and_then(|v| v.parse::<u32>().ok());
             images.push(ImageInfo {
                 src,
                 alt,
@@ -659,7 +653,12 @@ fn collect_forms(node: &Node, forms: &mut Vec<FormInfo>) {
                 .unwrap_or_else(|| "GET".to_string())
                 .to_uppercase();
             let mut inputs = Vec::new();
-            collect_form_inputs(&Node { kind: NodeKind::Element(elem.clone()) }, &mut inputs);
+            collect_form_inputs(
+                &Node {
+                    kind: NodeKind::Element(elem.clone()),
+                },
+                &mut inputs,
+            );
             forms.push(FormInfo {
                 action,
                 method,
@@ -747,10 +746,7 @@ fn node_to_text_inner(node: &Node, indent: usize, out: &mut String, in_pre: bool
                 out.push_str(text);
             } else {
                 // Collapse whitespace.
-                let collapsed: String = text
-                    .split_whitespace()
-                    .collect::<Vec<_>>()
-                    .join(" ");
+                let collapsed: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
                 if !collapsed.is_empty() {
                     out.push_str(&collapsed);
                 }
@@ -763,12 +759,40 @@ fn node_to_text_inner(node: &Node, indent: usize, out: &mut String, in_pre: bool
 
             let is_block = matches!(
                 elem.tag.as_str(),
-                "div" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
-                    | "section" | "article" | "main" | "header" | "footer"
-                    | "nav" | "aside" | "ul" | "ol" | "li" | "blockquote"
-                    | "pre" | "form" | "table" | "tr" | "td" | "th"
-                    | "dl" | "dt" | "dd" | "figure" | "figcaption"
-                    | "details" | "summary" | "hr" | "br"
+                "div"
+                    | "p"
+                    | "h1"
+                    | "h2"
+                    | "h3"
+                    | "h4"
+                    | "h5"
+                    | "h6"
+                    | "section"
+                    | "article"
+                    | "main"
+                    | "header"
+                    | "footer"
+                    | "nav"
+                    | "aside"
+                    | "ul"
+                    | "ol"
+                    | "li"
+                    | "blockquote"
+                    | "pre"
+                    | "form"
+                    | "table"
+                    | "tr"
+                    | "td"
+                    | "th"
+                    | "dl"
+                    | "dt"
+                    | "dd"
+                    | "figure"
+                    | "figcaption"
+                    | "details"
+                    | "summary"
+                    | "hr"
+                    | "br"
             );
 
             let is_pre = elem.tag == "pre" || in_pre;
@@ -827,7 +851,11 @@ fn node_to_text_inner(node: &Node, indent: usize, out: &mut String, in_pre: bool
 
             // Images: show alt text.
             if elem.tag == "img" {
-                let alt = elem.attrs.get("alt").map(String::as_str).unwrap_or("[image]");
+                let alt = elem
+                    .attrs
+                    .get("alt")
+                    .map(String::as_str)
+                    .unwrap_or("[image]");
                 out.push_str("[img: ");
                 out.push_str(alt);
                 out.push(']');
@@ -854,9 +882,7 @@ mod tests {
 
     #[test]
     fn parse_extracts_title() {
-        let doc = Document::parse(
-            "<html><head><title>My Page</title></head><body></body></html>",
-        );
+        let doc = Document::parse("<html><head><title>My Page</title></head><body></body></html>");
         assert_eq!(doc.title(), Some("My Page"));
     }
 
@@ -963,10 +989,7 @@ mod tests {
 
         let anchor = find_element(&doc.root, "a").expect("should find <a> element");
         assert_eq!(anchor.attrs.get("href").map(String::as_str), Some("/test"));
-        assert_eq!(
-            anchor.attrs.get("class").map(String::as_str),
-            Some("link")
-        );
+        assert_eq!(anchor.attrs.get("class").map(String::as_str), Some("link"));
         assert_eq!(
             anchor.attrs.get("id").map(String::as_str),
             Some("main-link")

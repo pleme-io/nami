@@ -23,6 +23,7 @@ mod mcp;
 mod render;
 mod scripting;
 mod tabs;
+mod transform;
 mod url_util;
 
 use clap::{Parser, Subcommand};
@@ -45,17 +46,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Open a URL
-    Open {
-        url: String,
-    },
+    Open { url: String },
     /// Fetch and dump page source
-    Source {
-        url: String,
-    },
+    Source { url: String },
     /// Fetch and render to plain text
-    Text {
-        url: String,
-    },
+    Text { url: String },
     /// Manage bookmarks
     Bookmarks {
         #[command(subcommand)]
@@ -94,10 +89,7 @@ fn main() -> anyhow::Result<()> {
 
     match cli.command {
         None => {
-            let url = cli
-                .url
-                .clone()
-                .unwrap_or_else(|| cfg.homepage.clone());
+            let url = cli.url.clone().unwrap_or_else(|| cfg.homepage.clone());
             tracing::info!("launching nami: {url}");
             rt.block_on(run_browser(cfg, &url))?;
         }
@@ -154,9 +146,26 @@ fn main() -> anyhow::Result<()> {
         Some(Commands::Render { url, width }) => {
             rt.block_on(async {
                 let fetcher = fetch::Fetcher::new(&cfg.network);
+                let transforms_path = cfg
+                    .transforms_file
+                    .clone()
+                    .unwrap_or_else(config::default_transforms_path);
+                let transforms =
+                    transform::TransformSet::load(&transforms_path).unwrap_or_default();
+
                 match fetcher.fetch_page_with_css(&url).await {
                     Ok((result, css_texts)) => {
-                        let doc = dom::Document::parse(&result.body);
+                        let mut doc = dom::Document::parse(&result.body);
+
+                        if !transforms.is_empty() {
+                            let report = transforms.apply(&mut doc);
+                            eprintln!(
+                                "[transforms] {} applied to {}",
+                                report.applied.len(),
+                                result.url
+                            );
+                        }
+
                         let mut stylesheets = Vec::new();
                         for css_text in &css_texts {
                             stylesheets.push(css::Stylesheet::parse(css_text));
@@ -166,8 +175,7 @@ fn main() -> anyhow::Result<()> {
                         }
                         let layout_tree =
                             layout::LayoutTree::compute(&doc, &stylesheets, width as f32 * 8.0);
-                        let page =
-                            render::render_document(&doc, Some(&layout_tree), width);
+                        let page = render::render_document(&doc, Some(&layout_tree), width);
                         let output = render::to_ansi_text(&page);
                         print!("{output}");
                     }

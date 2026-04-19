@@ -114,18 +114,13 @@ impl Fetcher {
 
         tracing::info!(url, "fetching");
 
-        let response = self
-            .client
-            .get(url)
-            .send()
-            .await
-            .map_err(|e| {
-                if e.is_timeout() {
-                    FetchError::Timeout(self.config.timeout_secs)
-                } else {
-                    FetchError::Request(e.to_string())
-                }
-            })?;
+        let response = self.client.get(url).send().await.map_err(|e| {
+            if e.is_timeout() {
+                FetchError::Timeout(self.config.timeout_secs)
+            } else {
+                FetchError::Request(e.to_string())
+            }
+        })?;
 
         let final_url = response.url().to_string();
         let status = response.status().as_u16();
@@ -155,9 +150,10 @@ impl Fetcher {
             "response received"
         );
 
-        let body = response.text().await.map_err(|e| {
-            FetchError::Request(format!("failed to read response body: {e}"))
-        })?;
+        let body = response
+            .text()
+            .await
+            .map_err(|e| FetchError::Request(format!("failed to read response body: {e}")))?;
 
         Ok(FetchResult {
             url: final_url,
@@ -177,10 +173,7 @@ impl Fetcher {
     /// Fetch a page and its linked CSS stylesheets.
     ///
     /// Returns the HTML body and a list of CSS stylesheet texts.
-    pub async fn fetch_page_with_css(
-        &self,
-        url: &str,
-    ) -> Result<(FetchResult, Vec<String>)> {
+    pub async fn fetch_page_with_css(&self, url: &str) -> Result<(FetchResult, Vec<String>)> {
         let page = self.fetch(url).await?;
 
         // Parse the HTML to find linked stylesheets.

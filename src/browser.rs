@@ -13,6 +13,7 @@ use crate::history::BrowsingHistory;
 use crate::input::{BrowserAction, InputHandler, Mode};
 use crate::render;
 use crate::tabs::{PageState, TabManager};
+use crate::transform::TransformSet;
 use crate::url_util;
 
 /// The main browser state.
@@ -43,6 +44,8 @@ pub struct Browser {
     pub address_bar: String,
     /// Whether the address bar is being edited.
     pub editing_address: bool,
+    /// Lisp-authored DOM transforms applied after parse, before layout.
+    pub transforms: TransformSet,
 }
 
 impl Browser {
@@ -62,6 +65,26 @@ impl Browser {
         let content_blocker = ContentBlocker::new(&config.content_blocking);
         let history = BrowsingHistory::load(&history_path);
         let bookmarks = Bookmarks::load(&bookmarks_path);
+
+        let transforms_path = config
+            .transforms_file
+            .clone()
+            .unwrap_or_else(crate::config::default_transforms_path);
+        let transforms = match TransformSet::load(&transforms_path) {
+            Ok(set) => {
+                if !set.is_empty() {
+                    tracing::info!(
+                        "loaded {} Lisp DOM transforms from {transforms_path:?}",
+                        set.len()
+                    );
+                }
+                set
+            }
+            Err(e) => {
+                tracing::warn!("failed to load transforms {transforms_path:?}: {e}");
+                TransformSet::default()
+            }
+        };
 
         let tabs = match initial_url {
             Some(url) => {
@@ -91,6 +114,7 @@ impl Browser {
             should_quit: false,
             address_bar: String::new(),
             editing_address: false,
+            transforms,
         }
     }
 
@@ -100,10 +124,9 @@ impl Browser {
 
         // Check content blocker.
         if self.content_blocker.should_block(&normalized) {
-            self.tabs.active_tab_mut().set_error(
-                &normalized,
-                "Blocked by content filter".to_string(),
-            );
+            self.tabs
+                .active_tab_mut()
+                .set_error(&normalized, "Blocked by content filter".to_string());
             self.status_message = Some(format!("Blocked: {normalized}"));
             return;
         }
@@ -132,9 +155,21 @@ impl Browser {
                 }
 
                 // Parse HTML and extract inline styles.
-                let doc = Document::parse(&result.body);
+                let mut doc = Document::parse(&result.body);
                 for inline_css in doc.inline_styles() {
                     stylesheets.push(Stylesheet::parse(&inline_css));
+                }
+
+                // Apply Lisp-authored DOM transforms post-parse, pre-layout.
+                // Absent/empty transforms set is the common case and a no-op.
+                if !self.transforms.is_empty() {
+                    let report = self.transforms.apply(&mut doc);
+                    if !report.applied.is_empty() {
+                        tracing::info!(
+                            "applied {} Lisp DOM transforms to {normalized}",
+                            report.applied.len()
+                        );
+                    }
                 }
 
                 let title = doc.title().unwrap_or("Untitled").to_string();
@@ -162,10 +197,9 @@ impl Browser {
                 self.status_message = Some(format!("Loaded: {}", result.url));
             }
             Err(e) => {
-                self.tabs.active_tab_mut().set_error(
-                    &normalized,
-                    e.to_string(),
-                );
+                self.tabs
+                    .active_tab_mut()
+                    .set_error(&normalized, e.to_string());
                 self.status_message = Some(format!("Error: {e}"));
             }
         }
@@ -176,15 +210,14 @@ impl Browser {
         match action {
             BrowserAction::ScrollDown(n) => {
                 let line_height = 20.0;
-                self.tabs
-                    .active_tab_mut()
-                    .scroll_down(n as f32 * line_height, self.viewport_height as f32 * line_height);
+                self.tabs.active_tab_mut().scroll_down(
+                    n as f32 * line_height,
+                    self.viewport_height as f32 * line_height,
+                );
             }
             BrowserAction::ScrollUp(n) => {
                 let line_height = 20.0;
-                self.tabs
-                    .active_tab_mut()
-                    .scroll_up(n as f32 * line_height);
+                self.tabs.active_tab_mut().scroll_up(n as f32 * line_height);
             }
             BrowserAction::HalfPageDown => {
                 let amount = self.viewport_height as f32 * 10.0;
@@ -289,14 +322,18 @@ impl Browser {
             }
             BrowserAction::ShowBookmarks => {
                 let bm_html = render_bookmarks_page(&self.bookmarks);
-                self.tabs.active_tab_mut().set_loaded("about:bookmarks", bm_html);
+                self.tabs
+                    .active_tab_mut()
+                    .set_loaded("about:bookmarks", bm_html);
                 self.tabs
                     .active_tab_mut()
                     .compute_layout(self.viewport_width as f32 * 8.0);
             }
             BrowserAction::ShowHistory => {
                 let hist_html = render_history_page(&self.history);
-                self.tabs.active_tab_mut().set_loaded("about:history", hist_html);
+                self.tabs
+                    .active_tab_mut()
+                    .set_loaded("about:history", hist_html);
                 self.tabs
                     .active_tab_mut()
                     .compute_layout(self.viewport_width as f32 * 8.0);
@@ -357,7 +394,9 @@ impl Browser {
             }
             "bookmarks" | "bmarks" => {
                 let html = render_bookmarks_page(&self.bookmarks);
-                self.tabs.active_tab_mut().set_loaded("about:bookmarks", html);
+                self.tabs
+                    .active_tab_mut()
+                    .set_loaded("about:bookmarks", html);
             }
             "history" | "hist" => {
                 let html = render_history_page(&self.history);
@@ -392,9 +431,7 @@ impl Browser {
                         .replace('&', "&amp;")
                         .replace('<', "&lt;")
                         .replace('>', "&gt;");
-                    let source_html = format!(
-                        "<html><body><pre>{escaped}</pre></body></html>"
-                    );
+                    let source_html = format!("<html><body><pre>{escaped}</pre></body></html>");
                     self.tabs
                         .active_tab_mut()
                         .set_loaded("about:source", source_html);
@@ -421,9 +458,7 @@ impl Browser {
         match &tab.page_state {
             PageState::Blank => render::render_blank_page(),
             PageState::Loading { url } => {
-                let html = format!(
-                    "<html><body><p>Loading {url}...</p></body></html>"
-                );
+                let html = format!("<html><body><p>Loading {url}...</p></body></html>");
                 let doc = Document::parse(&html);
                 render::render_document(&doc, None, self.viewport_width)
             }
@@ -495,9 +530,8 @@ impl Browser {
 
 /// Generate HTML for the bookmarks page.
 fn render_bookmarks_page(bookmarks: &Bookmarks) -> String {
-    let mut html = String::from(
-        "<html><head><title>Bookmarks</title></head><body><h1>Bookmarks</h1><ul>",
-    );
+    let mut html =
+        String::from("<html><head><title>Bookmarks</title></head><body><h1>Bookmarks</h1><ul>");
 
     for bm in bookmarks.all() {
         let tags = if bm.tags.is_empty() {
