@@ -15,6 +15,7 @@
 //! the consumer.
 
 use nami_core::agent::{AgentRegistry, AgentSpec};
+use nami_core::derived::{DerivedRegistry, DerivedSpec};
 use nami_core::effect::{EffectRegistry, EffectSpec};
 use nami_core::plan::{PlanRegistry, PlanSpec};
 use nami_core::predicate::{PredicateRegistry, PredicateSpec};
@@ -33,6 +34,7 @@ pub struct Substrate {
     pub agents: AgentRegistry,
     pub routes: RouteRegistry,
     pub queries: QueryRegistry,
+    pub derived: DerivedRegistry,
 }
 
 impl Substrate {
@@ -75,6 +77,10 @@ impl Substrate {
         let mut queries = QueryRegistry::new();
         queries.extend(query_specs);
 
+        let derived_specs: Vec<DerivedSpec> = nami_core::derived::compile(src)?;
+        let mut derived = DerivedRegistry::new();
+        derived.extend(derived_specs);
+
         Ok(Self {
             states,
             effects,
@@ -83,6 +89,7 @@ impl Substrate {
             agents,
             routes,
             queries,
+            derived,
         })
     }
 
@@ -90,7 +97,7 @@ impl Substrate {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "{} state · {} effect · {} predicate · {} plan · {} agent · {} route · {} query",
+            "{} state · {} effect · {} predicate · {} plan · {} agent · {} route · {} query · {} derived",
             self.states.len(),
             self.effects.len(),
             self.predicates.len(),
@@ -98,6 +105,7 @@ impl Substrate {
             self.agents.len(),
             self.routes.len(),
             self.queries.len(),
+            self.derived.len(),
         )
     }
 
@@ -111,6 +119,7 @@ impl Substrate {
             && self.agents.is_empty()
             && self.routes.is_empty()
             && self.queries.is_empty()
+            && self.derived.is_empty()
     }
 
     /// Produce a fresh [`StateStore`] seeded with this substrate's
@@ -159,6 +168,9 @@ mod tests {
                       :endpoint "https://api.example/users/:id"
                       :method "GET"
                       :into "user")
+            (defderived :name "visits-squared"
+                        :inputs ("counter")
+                        :compute "(* counter counter)")
         "#;
         let s = Substrate::from_str(src).unwrap();
         assert_eq!(s.states.len(), 1);
@@ -168,6 +180,7 @@ mod tests {
         assert_eq!(s.agents.len(), 1);
         assert_eq!(s.routes.len(), 1);
         assert_eq!(s.queries.len(), 1);
+        assert_eq!(s.derived.len(), 1);
         assert!(!s.is_empty());
     }
 

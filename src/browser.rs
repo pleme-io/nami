@@ -660,9 +660,14 @@ impl Browser {
                     detections: &detections,
                     state: &page_state,
                 };
-                let (_decisions, reports) = nami_core::effect::run_page_load(
+                // Use the derived-aware variant so effect bodies can
+                // read `(defderived …)` values alongside state cells.
+                // Back-compat: when the derived registry is empty the
+                // variant is semantically identical to run_page_load.
+                let (_decisions, reports) = nami_core::effect::run_page_load_with_derived(
                     &self.state_store,
                     &self.substrate.effects,
+                    &self.substrate.derived,
                     &self.substrate.predicates,
                     &cx,
                 );
