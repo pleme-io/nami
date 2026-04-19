@@ -56,16 +56,16 @@ impl TransformSet {
 #[derive(Clone)]
 struct PathItem {
     tag: String,
-    class_attr: String,
-    id: Option<String>,
+    /// Full attribute map — lets attribute selectors like `[hx-get]`,
+    /// `[data-slot="card"]`, `[type=email]` match.
+    attrs: std::collections::HashMap<String, String>,
 }
 
 impl PathItem {
     fn from_element(el: &Element) -> Self {
         Self {
             tag: el.tag.clone(),
-            class_attr: el.attrs.get("class").cloned().unwrap_or_default(),
-            id: el.attrs.get("id").cloned(),
+            attrs: el.attrs.clone(),
         }
     }
 }
@@ -75,10 +75,15 @@ impl SelectorNode for PathItem {
         &self.tag
     }
     fn has_class(&self, class: &str) -> bool {
-        self.class_attr.split_whitespace().any(|c| c == class)
+        self.attrs
+            .get("class")
+            .is_some_and(|c| c.split_whitespace().any(|w| w == class))
     }
     fn id(&self) -> Option<&str> {
-        self.id.as_deref()
+        self.attrs.get("id").map(String::as_str)
+    }
+    fn attr(&self, name: &str) -> Option<&str> {
+        self.attrs.get(name).map(String::as_str)
     }
 }
 
