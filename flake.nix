@@ -24,10 +24,9 @@
       toolName = "nami";
       src = self;
       repo = "pleme-io/nami";
-    }
-    // {
-      homeManagerModules.default = import ./module {
-        hmHelpers = import "${substrate}/lib/hm-service-helpers.nix" { lib = nixpkgs.lib; };
+      module = {
+        description = "Nami (波) — GPU-rendered TUI browser";
+        withMcp = true;
       };
     };
 }
