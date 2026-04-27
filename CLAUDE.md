@@ -1,5 +1,15 @@
 # Aranami (荒波) — GPU-Rendered TUI Browser
 
+> **★★★ CSE / Knowable Construction.** This repo operates under
+> **Constructive Substrate Engineering** — canonical specification at
+> [`pleme-io/theory/CONSTRUCTIVE-SUBSTRATE-ENGINEERING.md`](https://github.com/pleme-io/theory/blob/main/CONSTRUCTIVE-SUBSTRATE-ENGINEERING.md).
+> The Compounding Directive (operational rules: solve once, load-bearing
+> fixes only, idiom-first, models stay current, direction beats velocity)
+> is in the org-level pleme-io/CLAUDE.md ★★★ section. Read both before
+> non-trivial changes. GPU TUI browser; consumes the typed nami-core
+> DOM/CSS/layout pipeline shared with namimado, and is auto-enabled
+> fleet-wide via substrate's module-trio (overlay + HM module + packages).
+
 A GPU-accelerated TUI browser that renders real HTML+CSS in a terminal-like
 interface. Pure Rust with own rendering engine (no embedded Chromium/Firefox).
 Uses nami-core for the content pipeline (DOM, CSS, layout) and garasu for
