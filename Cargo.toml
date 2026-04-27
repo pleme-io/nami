@@ -52,7 +52,7 @@ pollster = "0.4"
 # HTML/CSS parsing
 html5ever = "0.29"
 markup5ever = "0.14"
-lightningcss = "1.0.0-alpha.71"
+lightningcss = { version = "1.0.0-alpha.71", default-features = false, features = ["visitor"] }
 
 # Layout engine
 taffy = "0.7"
