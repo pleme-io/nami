@@ -151,7 +151,7 @@ version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40c48f72fd53cd289104fc64099abca73db4166ad86ea0b4341abe65af83dadc"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -162,7 +162,7 @@ checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
 dependencies = [
  "anstyle",
  "once_cell_polyfill",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1135,7 +1135,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1288,7 +1288,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2954,7 +2954,7 @@ dependencies = [
 [[package]]
 name = "nami-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/pleme-io/nami-core?branch=main#36780e9ca2bde30d5e0ba92eb661cb444a22b7fc"
+source = "git+https://github.com/pleme-io/nami-core?branch=main#7cc1b4c7163d56e19e9597cfc31b87a9eb54eb13"
 dependencies = [
  "blake3",
  "hmac",
@@ -3078,7 +3078,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4471,7 +4471,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4989,7 +4989,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5204,7 +5204,7 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 [[package]]
 name = "tatara-core"
 version = "0.2.0"
-source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+source = "git+https://github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
 dependencies = [
  "anyhow",
  "blake3",
@@ -5225,7 +5225,7 @@ dependencies = [
 [[package]]
 name = "tatara-eval"
 version = "0.2.0"
-source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+source = "git+https://github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
 dependencies = [
  "bumpalo",
  "serde",
@@ -5238,7 +5238,7 @@ dependencies = [
 [[package]]
 name = "tatara-lattice"
 version = "0.2.0"
-source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+source = "git+https://github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
 dependencies = [
  "schemars 0.8.22",
  "serde",
@@ -5249,7 +5249,7 @@ dependencies = [
 [[package]]
 name = "tatara-lisp"
 version = "0.2.0"
-source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+source = "git+https://github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
 dependencies = [
  "blake3",
  "serde",
@@ -5261,7 +5261,7 @@ dependencies = [
 [[package]]
 name = "tatara-lisp-derive"
 version = "0.2.0"
-source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+source = "git+https://github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5271,7 +5271,7 @@ dependencies = [
 [[package]]
 name = "tatara-nix"
 version = "0.2.0"
-source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+source = "git+https://github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
 dependencies = [
  "blake3",
  "hex",
@@ -5287,7 +5287,7 @@ dependencies = [
 [[package]]
 name = "tatara-process"
 version = "0.2.0"
-source = "git+ssh://git@github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
+source = "git+https://github.com/pleme-io/tatara?rev=a1062f8069bb336a87cb9b2c68a85885665e3234#a1062f8069bb336a87cb9b2c68a85885665e3234"
 dependencies = [
  "anyhow",
  "blake3",
@@ -5316,7 +5316,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6415,7 +6415,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

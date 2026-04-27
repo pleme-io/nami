@@ -41,7 +41,7 @@ shikumi = { git = "https://github.com/pleme-io/shikumi" }
 soushi = { git = "https://github.com/pleme-io/soushi" }
 awase = { git = "https://github.com/pleme-io/awase" }
 # Shared browser foundation + Lisp-authored DOM transforms (tatara).
-nami-core = { git = "ssh://git@github.com/pleme-io/nami-core", branch = "main", features = ["eval"] }
+nami-core = { git = "https://github.com/pleme-io/nami-core", branch = "main", features = ["eval"] }
 schemars = "1"
 
 # GPU rendering
