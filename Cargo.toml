@@ -30,6 +30,7 @@ strip = true
 # Pleme-io shared libraries
 garasu = { git = "https://github.com/pleme-io/garasu" }
 madori = { git = "https://github.com/pleme-io/madori" }
+ishou-tokens = { git = "https://github.com/pleme-io/ishou", features = ["wgpu"] }
 egaku = { git = "https://github.com/pleme-io/egaku" }
 irodzuki = { git = "https://github.com/pleme-io/irodzuki" }
 mojiban = { git = "https://github.com/pleme-io/mojiban" }
