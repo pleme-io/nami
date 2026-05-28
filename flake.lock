@@ -30006,11 +30006,11 @@
         "nixpkgs": "nixpkgs_104"
       },
       "locked": {
-        "lastModified": 1779956193,
-        "narHash": "sha256-spYTmeueAjsgGdi8YUKq0qXo951x7JLaq7OJHYpkmG4=",
+        "lastModified": 1779959701,
+        "narHash": "sha256-dc7mQnsH3W74AIlw/dAu6x4FRaDj8wVG//GCv37hL8A=",
         "owner": "pleme-io",
         "repo": "substrate",
-        "rev": "5820ef45b4b42ad051951c97f9feaaff90fb7599",
+        "rev": "da6d194cb6c1a207335687c9bac8cfd3a258d989",
         "type": "github"
       },
       "original": {
