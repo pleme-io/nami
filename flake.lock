@@ -22041,11 +22041,11 @@
         "nixpkgs": "nixpkgs_83"
       },
       "locked": {
-        "lastModified": 1779942460,
-        "narHash": "sha256-RMB8I4PUk19Mzvs+ZCj1kGzKAfWwRZlu++8+vWGvQxw=",
+        "lastModified": 1779943330,
+        "narHash": "sha256-99CL4D4cJDQD1QYE5I8UECkdbZtFEvKHVj8nAoX48EM=",
         "owner": "pleme-io",
         "repo": "substrate",
-        "rev": "ac20afb9091f59cded4c5cea75c656bfc43246fa",
+        "rev": "43340c5ad4f4cebd71d933841c30b22908733bc2",
         "type": "github"
       },
       "original": {
