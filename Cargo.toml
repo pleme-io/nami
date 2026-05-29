@@ -13,6 +13,11 @@ categories = ["command-line-utilities", "web-programming"]
 keywords = ["browser", "tui", "gpu", "html", "css"]
 publish = true
 
+
+[package.metadata.pleme]
+description = "Nami (波) — GPU-rendered TUI browser"
+with-mcp = true
+
 [[bin]]
 name = "nami"
 path = "src/main.rs"
