@@ -327,7 +327,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "jni";
@@ -564,7 +564,7 @@ rec {
       };
       "aranami" = rec {
         crateName = "aranami";
-        version = "0.1.3";
+        version = "0.1.4";
         edition = "2024";
         crateBin = [
           {
@@ -1154,8 +1154,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/awase";
-          rev = "08c0974fbdc7d0c15a18cecf926b8a049076e491";
-          sha256 = "0wr7kfd8kbgk3r7cy2cnci6r28g4sh0qin3ix70khphb7kjp4m88";
+          rev = "a4385518067eec901777bc91201e77cd4d07ef02";
+          sha256 = "09x926c3addp3ga32fikh2g801y7khkc4fnbmqdnpj5fpdy2654r";
         };
         dependencies = [
           {
@@ -1318,11 +1318,11 @@ rec {
         };
         resolvedDefaultFeatures = [ "default" ];
       };
-      "bitflags 2.11.1" = rec {
+      "bitflags 2.12.1" = rec {
         crateName = "bitflags";
-        version = "2.11.1";
+        version = "2.12.1";
         edition = "2021";
-        sha256 = "1cvqijg3rvwgis20a66vfdxannjsxfy5fgjqkaq3l13gyfcj4lf4";
+        sha256 = "02phhjm7w380zdh8928zf13cfi1bw2qz2ay36ml2jmwmmv8cxmw4";
         authors = [
           "The Rust Project Developers"
         ];
@@ -1571,10 +1571,10 @@ rec {
       };
       "brotli" = rec {
         crateName = "brotli";
-        version = "8.0.2";
+        version = "8.0.3";
         edition = "2015";
         crateBin = [];
-        sha256 = "0q25r00z3gm5wzvv4vfxvlx5zjb8i4jwyznrvdcp7abs7ihbkn2b";
+        sha256 = "0446ihwc6yk4dsjr4fp9jm9inbzibcwrsjj7pj5p1x9nci8y86c1";
         authors = [
           "Daniel Reiter Horn <danielrh@dropbox.com>"
           "The Brotli Authors"
@@ -1610,10 +1610,10 @@ rec {
       };
       "brotli-decompressor" = rec {
         crateName = "brotli-decompressor";
-        version = "5.0.0";
+        version = "5.0.1";
         edition = "2015";
         crateBin = [];
-        sha256 = "00yyswj1rj20ma4wr4wcci4r9ywlgvxa87nqsv5rik5y588vhjw7";
+        sha256 = "0929p5smsq5v0jy509gn746y3v1yjjwnk49xg5g1pklj3cz54qjr";
         libName = "brotli_decompressor";
         authors = [
           "Daniel Reiter Horn <danielrh@dropbox.com>"
@@ -1850,7 +1850,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "log";
@@ -1928,9 +1928,9 @@ rec {
       };
       "cc" = rec {
         crateName = "cc";
-        version = "1.2.62";
+        version = "1.2.63";
         edition = "2018";
-        sha256 = "164zsxcy2zzvbbh1qpbrsssz8kmria41j4agih47sal3y1cyip51";
+        sha256 = "0zy2bqc4nvj6bv2cipx4h4bn65wf1zqf1fw1hsh64mmvg1hh2vjm";
         authors = [
           "Alex Crichton <alex@alexcrichton.com>"
         ];
@@ -2784,7 +2784,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "fontdb";
@@ -3538,7 +3538,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
             features = [ "std" ];
           }
@@ -3561,9 +3561,9 @@ rec {
       };
       "displaydoc" = rec {
         crateName = "displaydoc";
-        version = "0.2.5";
+        version = "0.2.6";
         edition = "2021";
-        sha256 = "1q0alair462j21iiqwrr21iabkfnb13d6x5w95lkdg21q2xrqdlp";
+        sha256 = "0kyxwfbdmagd8afzb2pzja7wj8dhah7smxdsgw00iq8pa2jhmiqs";
         procMacro = true;
         authors = [
           "Jane Lusby <jlusby@yaah.dev>"
@@ -4716,6 +4716,130 @@ rec {
         };
         resolvedDefaultFeatures = [ "alloc" "async-await" "async-await-macro" "channel" "futures-channel" "futures-io" "futures-macro" "futures-sink" "io" "memchr" "sink" "slab" "std" ];
       };
+      "gen-macros" = rec {
+        crateName = "gen-macros";
+        version = "0.1.8";
+        edition = "2024";
+        workspace_member = null;
+        src = pkgs.fetchgit {
+          url = "https://github.com/pleme-io/gen";
+          rev = "97aaf2e4ce3cfbc50d0f7377d227bda42dd4d2c6";
+          sha256 = "1a91d9b524p3kmn3zxvsp0kxznnir23jdyiy9qp8945f77vyx8zy";
+        };
+        procMacro = true;
+        libName = "gen_macros";
+        authors = [
+          "pleme-io"
+        ];
+        dependencies = [
+          {
+            name = "proc-macro2";
+            packageId = "proc-macro2";
+          }
+          {
+            name = "quote";
+            packageId = "quote";
+          }
+          {
+            name = "syn";
+            packageId = "syn 2.0.117";
+            features = [ "full" "extra-traits" ];
+          }
+        ];
+
+      };
+      "gen-platform" = rec {
+        crateName = "gen-platform";
+        version = "0.1.8";
+        edition = "2024";
+        workspace_member = null;
+        src = pkgs.fetchgit {
+          url = "https://github.com/pleme-io/gen";
+          rev = "97aaf2e4ce3cfbc50d0f7377d227bda42dd4d2c6";
+          sha256 = "1a91d9b524p3kmn3zxvsp0kxznnir23jdyiy9qp8945f77vyx8zy";
+        };
+        libName = "gen_platform";
+        authors = [
+          "pleme-io"
+        ];
+        dependencies = [
+          {
+            name = "gen-macros";
+            packageId = "gen-macros";
+          }
+          {
+            name = "gen-types";
+            packageId = "gen-types";
+          }
+          {
+            name = "inventory";
+            packageId = "inventory";
+          }
+          {
+            name = "serde";
+            packageId = "serde";
+            features = [ "derive" ];
+          }
+          {
+            name = "serde_json";
+            packageId = "serde_json";
+          }
+          {
+            name = "thiserror";
+            packageId = "thiserror 2.0.18";
+          }
+        ];
+
+      };
+      "gen-types" = rec {
+        crateName = "gen-types";
+        version = "0.1.8";
+        edition = "2024";
+        workspace_member = null;
+        src = pkgs.fetchgit {
+          url = "https://github.com/pleme-io/gen";
+          rev = "97aaf2e4ce3cfbc50d0f7377d227bda42dd4d2c6";
+          sha256 = "1a91d9b524p3kmn3zxvsp0kxznnir23jdyiy9qp8945f77vyx8zy";
+        };
+        libName = "gen_types";
+        authors = [
+          "pleme-io"
+        ];
+        dependencies = [
+          {
+            name = "blake3";
+            packageId = "blake3";
+          }
+          {
+            name = "chrono";
+            packageId = "chrono";
+            features = [ "serde" ];
+          }
+          {
+            name = "indexmap";
+            packageId = "indexmap";
+            features = [ "serde" ];
+          }
+          {
+            name = "inventory";
+            packageId = "inventory";
+          }
+          {
+            name = "serde";
+            packageId = "serde";
+            features = [ "derive" ];
+          }
+          {
+            name = "serde_json";
+            packageId = "serde_json";
+          }
+          {
+            name = "thiserror";
+            packageId = "thiserror 2.0.18";
+          }
+        ];
+
+      };
       "generic-array" = rec {
         crateName = "generic-array";
         version = "0.14.7";
@@ -5050,8 +5174,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/egaku";
-          rev = "3b2af556217f4bcadc58b2f6b494f80224a10a9e";
-          sha256 = "01jrzk2w2dil6nbqg7d5lcdrsbqg45ixnki5q5flcvhvb09zmdbg";
+          rev = "0ea3762b7101beabcc97927735a7a437282ade64";
+          sha256 = "131a61mcv6g9s23s95khz22khcwprqyjw958r0ji078vs2b78x8x";
         };
         dependencies = [
           {
@@ -5085,8 +5209,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/garasu";
-          rev = "4a35c3ef6e0342a29b0fa614b4db2dcc29181adb";
-          sha256 = "0p9qy6l4q0yig92y4gvgd0wwh7kk01w5vci64i4fhlihab98j92c";
+          rev = "5a532f3f4d2341f2348cb1417a80367e8554555e";
+          sha256 = "04r1536an8im8g0n04baslwccydvwr6qdygvm0wiap4xdqibcc96";
         };
         dependencies = [
           {
@@ -5150,8 +5274,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/shikumi";
-          rev = "ff0dbab8060acb97bb1daa11181664c69c069aa6";
-          sha256 = "0ad63lf5jp2n8kd3dqgkc6plndbckaxrgmhqdmpkdh9n51kjjjxh";
+          rev = "4426f572b66d053dde2ca211c3b55121d76598b1";
+          sha256 = "1jkf874jxcx5zclq3i1913nbpd822ly0vwbwy4xxgm3fmg3m06nn";
         };
         dependencies = [
           {
@@ -5168,8 +5292,24 @@ rec {
             features = [ "env" "yaml" "toml" ];
           }
           {
+            name = "gen-platform";
+            packageId = "gen-platform";
+          }
+          {
+            name = "gen-types";
+            packageId = "gen-types";
+          }
+          {
             name = "notify";
             packageId = "notify";
+            usesDefaultFeatures = false;
+          }
+          {
+            name = "notify";
+            packageId = "notify";
+            usesDefaultFeatures = false;
+            target = { target, features }: ("macos" == target."os" or null);
+            features = [ "macos_kqueue" ];
           }
           {
             name = "serde";
@@ -5381,7 +5521,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
           }
           {
@@ -5408,7 +5548,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
           }
         ];
@@ -5474,7 +5614,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
           }
           {
@@ -5507,7 +5647,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
           }
         ];
@@ -5656,8 +5796,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/hasami";
-          rev = "5462628c9da898f4034475efc242f9ed88cca671";
-          sha256 = "16pl9pxncfsm26nka00dxvazc5skmhpymrrslr9wiccpdnycdwj1";
+          rev = "6eb959a307bac2198b6d4884d57f7c22be95f007";
+          sha256 = "1svakv419vvsd0bzss251iwpky0q5bjr08mz3fpfbmg1b4nq4a21";
         };
         dependencies = [
           {
@@ -6096,9 +6236,9 @@ rec {
       };
       "hyper" = rec {
         crateName = "hyper";
-        version = "1.9.0";
+        version = "1.10.1";
         edition = "2021";
-        sha256 = "1jmwbwqcaficskg76kq402gbymbnh2z4v99xwq3l5aa6n8bg16b2";
+        sha256 = "1624nwrh1ci34psqcl3q8q266kha8kd6fmqjj14qck49l59iqa2m";
         authors = [
           "Sean McArthur <sean@seanmonstar.com>"
         ];
@@ -6326,7 +6466,7 @@ rec {
           }
           {
             name = "rustls-native-certs";
-            packageId = "rustls-native-certs 0.8.3";
+            packageId = "rustls-native-certs 0.8.4";
             optional = true;
           }
           {
@@ -7244,19 +7384,13 @@ rec {
       };
       "inotify" = rec {
         crateName = "inotify";
-        version = "0.11.1";
+        version = "0.11.2";
         edition = "2018";
-        sha256 = "16fiffnqhfdwzgrv3wcnaih0a9xbx1a44nma1yn5idr83apkwnxx";
-        authors = [
-          "Hanno Braun <mail@hannobraun.de>"
-          "Félix Saparelli <me@passcod.name>"
-          "Cristian Kubis <cristian.kubis@tsunix.de>"
-          "Frank Denis <github@pureftpd.org>"
-        ];
+        sha256 = "1hd2xixzzr8s6anxil0db57jbfxvr4zv17qmzr34jwrfhjjnhgjk";
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "inotify-sys";
@@ -7269,8 +7403,8 @@ rec {
         ];
         features = {
           "default" = [ "stream" ];
-          "futures-core" = [ "dep:futures-core" ];
-          "stream" = [ "futures-core" "tokio" ];
+          "futures-util" = [ "dep:futures-util" ];
+          "stream" = [ "futures-util" "tokio" ];
           "tokio" = [ "dep:tokio" ];
         };
       };
@@ -7287,6 +7421,29 @@ rec {
           {
             name = "libc";
             packageId = "libc";
+          }
+        ];
+
+      };
+      "inventory" = rec {
+        crateName = "inventory";
+        version = "0.3.24";
+        edition = "2021";
+        sha256 = "16y3vbab2ld8ykjap1xxwk001jliyqsj8np57zpcrx7jfq6c7w54";
+        authors = [
+          "David Tolnay <dtolnay@gmail.com>"
+        ];
+        dependencies = [
+          {
+            name = "rustversion";
+            packageId = "rustversion";
+            target = { target, features }: (builtins.elem "wasm" target."family");
+          }
+        ];
+        devDependencies = [
+          {
+            name = "rustversion";
+            packageId = "rustversion";
           }
         ];
 
@@ -7313,27 +7470,31 @@ rec {
       };
       "irodori" = rec {
         crateName = "irodori";
-        version = "0.1.0";
+        version = "0.1.1";
         edition = "2024";
-        sha256 = "07nbryqvivbpg0gw9sbb8c8lbhvmrp1pcmlr6w7nq68jry44ph8d";
+        sha256 = "1fdvzzvdvas59m5dak2v2bvbbl2kxf5zpp6lvdpn5130lg16w7kw";
         dependencies = [
           {
             name = "serde";
             packageId = "serde";
             features = [ "derive" ];
           }
+          {
+            name = "thiserror";
+            packageId = "thiserror 2.0.18";
+          }
         ];
 
       };
       "irodzuki" = rec {
         crateName = "irodzuki";
-        version = "0.1.2";
+        version = "0.1.3";
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/irodzuki";
-          rev = "224b50a221f0c4e2ce2eab661fda57ca56ada45b";
-          sha256 = "0fhnq9g2bwqnnh2xbd8z4h0y4wfb20b0w31akvib75gwyv450g12";
+          rev = "076c014b90985936ca9b7ce6cbe04dfe6c1b5890";
+          sha256 = "04b9sb02b33qnfnvcyqy6lbn1932b49cmwvf1bi5njz7fbc21r8p";
         };
         dependencies = [
           {
@@ -7385,8 +7546,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/ishou";
-          rev = "fd91656b46863d238206d29ce309ac37da8caef3";
-          sha256 = "1s1553j82czmhj14rh84f5d6khmd6dmvxy8fsidraqn7c7fnbyq0";
+          rev = "9dbc234a345a4ddc456bd912a66e851840a07114";
+          sha256 = "1mqs6lj9sb34859hhfllkgznhv7qm006amg8wkadz4mhhvn6p9ph";
         };
         libName = "ishou_tokens";
         dependencies = [
@@ -7823,8 +7984,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/kaname";
-          rev = "46e66f7cd5a77700956bcc5681e45a909b7fae4b";
-          sha256 = "112lxyy5lz95r91ayld7ba8ynr4jqp89jxfjhf34cspv0nps2pvz";
+          rev = "de15757779e51827c5a701de2e9cd85f120f45ff";
+          sha256 = "1n4bpm2zvb1xq75yb09pwrsffgv7zwh7xx1zbk9zzydy8jngk49q";
         };
         dependencies = [
           {
@@ -7918,9 +8079,9 @@ rec {
       };
       "kqueue" = rec {
         crateName = "kqueue";
-        version = "1.1.1";
+        version = "1.2.0";
         edition = "2021";
-        sha256 = "0sjrsnza8zxr1zfpv6sa0zapd54kx9wlijrz9apqvs6wsw303hza";
+        sha256 = "1dc7rm23i7s1574xx185836rxyzynrsv5wkn96nf0649f990fg17";
         authors = [
           "William Orr <will@worrbase.com>"
         ];
@@ -7949,7 +8110,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
           }
           {
@@ -8604,16 +8765,16 @@ rec {
       };
       "libredox" = rec {
         crateName = "libredox";
-        version = "0.1.16";
+        version = "0.1.17";
         edition = "2021";
-        sha256 = "0v54zvgknag9310wcjykgv86pgq02qr3mzgkdg4r6m1k7ns3nbz0";
+        sha256 = "1ly9hnhiy0f6ccnlg3h8lca9smvv268gj5iwia4gnm10rsxbcaph";
         authors = [
           "4lDO2 <4lDO2@protonmail.com>"
         ];
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
           }
           {
@@ -8628,7 +8789,7 @@ rec {
           }
           {
             name = "redox_syscall";
-            packageId = "redox_syscall 0.7.5";
+            packageId = "redox_syscall 0.8.1";
             optional = true;
           }
         ];
@@ -8663,7 +8824,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "const-str";
@@ -8864,9 +9025,9 @@ rec {
       };
       "log" = rec {
         crateName = "log";
-        version = "0.4.30";
+        version = "0.4.31";
         edition = "2021";
-        sha256 = "1rd6sw3gv9hb93464w7x3sip99zf8sjagm662r2ckg14b1lcavk1";
+        sha256 = "0kq2fh6q2bjkrm8m6hj8kb7gxfd7cr7qbcpxd1lc1xq5rns30fqi";
         authors = [
           "The Rust Project Developers"
         ];
@@ -8923,13 +9084,13 @@ rec {
       };
       "madori" = rec {
         crateName = "madori";
-        version = "0.1.1";
+        version = "0.1.2";
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/madori";
-          rev = "c8701616088775c2b6bc3833fb4826ecb30f24f9";
-          sha256 = "0c4szg4ns5np4yccx4bs78xb7r5cvqylgg80l7j9c8ccv8l91757";
+          rev = "efd5c229d62b56650f06481ef71fb1ff1bbae192";
+          sha256 = "1f10a7nw7rbz16ida7s7rz9gzvy1vq5b3qbsi9sbix84n26hqi7s";
         };
         dependencies = [
           {
@@ -9082,9 +9243,9 @@ rec {
       };
       "memchr" = rec {
         crateName = "memchr";
-        version = "2.8.0";
+        version = "2.8.1";
         edition = "2021";
-        sha256 = "0y9zzxcqxvdqg6wyag7vc3h0blhdn7hkq164bxyx2vph8zs5ijpq";
+        sha256 = "1n448jx01h5z2xknj6x2dhxgr8s8fb717cf6vfqj5lmhkpj7m53b";
         authors = [
           "Andrew Gallant <jamslam@gmail.com>"
           "bluss"
@@ -9131,7 +9292,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "block";
@@ -9212,9 +9373,9 @@ rec {
       };
       "mio" = rec {
         crateName = "mio";
-        version = "1.2.0";
+        version = "1.2.1";
         edition = "2021";
-        sha256 = "1hanrh4fwsfkdqdaqfidz48zz1wdix23zwn3r2x78am0garfbdsh";
+        sha256 = "1nkggmrlnjs93w8rja4lvjj4aml1xqahgimv1h0p7d373kvhmg82";
         authors = [
           "Carl Lerche <me@carllerche.com>"
           "Thomas de Zeeuw <thomasdezeeuw@gmail.com>"
@@ -9345,7 +9506,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "codespan-reporting";
@@ -9450,13 +9611,13 @@ rec {
       };
       "nami-core" = rec {
         crateName = "nami-core";
-        version = "0.1.1";
+        version = "0.1.2";
         edition = "2024";
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/nami-core";
-          rev = "0f35ce3e28997df12802a7916f58fada33e5600a";
-          sha256 = "04f39f72sk9x509w98rn786r3j2g8x2366q3dmnyz3cfjva4b2nb";
+          rev = "4e0f0809ccd63c683fe93be6fa71835a38789028";
+          sha256 = "1hnl6239g2lpd9n2y3mpgqnn4vng9sp85x9rlyanyjl16mmw1vv8";
         };
         libName = "nami_core";
         dependencies = [
@@ -9622,7 +9783,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "jni-sys";
@@ -9774,7 +9935,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             target = { target, features }: ("macos" == target."os" or null);
           }
           {
@@ -9854,7 +10015,7 @@ rec {
           "serde" = [ "notify-types/serde" ];
           "serialization-compat-6" = [ "notify-types/serialization-compat-6" ];
         };
-        resolvedDefaultFeatures = [ "default" "fsevent-sys" "macos_fsevent" ];
+        resolvedDefaultFeatures = [ "default" "fsevent-sys" "kqueue" "macos_fsevent" "macos_kqueue" "mio" ];
       };
       "notify-types" = rec {
         crateName = "notify-types";
@@ -9868,7 +10029,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
         ];
         features = {
@@ -10147,7 +10308,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
           }
@@ -10487,7 +10648,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
             features = [ "std" ];
@@ -10824,7 +10985,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
           }
@@ -10981,7 +11142,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
           }
@@ -11074,7 +11235,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
             features = [ "std" ];
@@ -11129,7 +11290,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
             features = [ "std" ];
@@ -11368,7 +11529,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
           }
@@ -11458,7 +11619,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
             features = [ "std" ];
@@ -11549,7 +11710,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
             features = [ "std" ];
@@ -11637,7 +11798,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
           }
@@ -11724,7 +11885,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
           }
@@ -11820,7 +11981,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
           }
@@ -12306,7 +12467,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             optional = true;
             usesDefaultFeatures = false;
           }
@@ -12529,7 +12690,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "cfg-if";
@@ -12797,7 +12958,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "cssparser";
@@ -13407,7 +13568,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "crc32fast";
@@ -13642,7 +13803,7 @@ rec {
         dependencies = [
           {
             name = "toml_edit";
-            packageId = "toml_edit 0.25.11+spec-1.1.0";
+            packageId = "toml_edit 0.25.12+spec-1.1.0";
             usesDefaultFeatures = false;
             features = [ "parse" ];
           }
@@ -13834,7 +13995,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "getopts";
@@ -14513,7 +14674,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
         ];
         features = {
@@ -14523,11 +14684,11 @@ rec {
         };
         resolvedDefaultFeatures = [ "default" "userspace" ];
       };
-      "redox_syscall 0.7.5" = rec {
+      "redox_syscall 0.8.1" = rec {
         crateName = "redox_syscall";
-        version = "0.7.5";
+        version = "0.8.1";
         edition = "2021";
-        sha256 = "06qvcqy42dv563dsbxpxyig0mslwrhyx3xllknqyl4l41nka2rj6";
+        sha256 = "1rrcn3nxva589cdhq1bhbvnxdbb6726f1lb5srbn9qx6yaabhi2v";
         libName = "syscall";
         authors = [
           "Jeremy Soller <jackpot51@gmail.com>"
@@ -14535,7 +14696,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
         ];
         features = {
@@ -15230,10 +15391,10 @@ rec {
       };
       "rhai" = rec {
         crateName = "rhai";
-        version = "1.25.0";
+        version = "1.25.1";
         edition = "2018";
         crateBin = [];
-        sha256 = "020y0ivsxis7z6v3rb76i32drbhc71fxiffyw5jhb3qr3hn5bp2w";
+        sha256 = "1bvxfajy89k1l2yx2c9arm3rjwcvq4bc8lx59cm209b6qgwd0kfx";
         authors = [
           "Jonathan Turner"
           "Lukáš Hozda"
@@ -15249,7 +15410,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
           }
           {
@@ -15885,7 +16046,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
           }
           {
@@ -15996,7 +16157,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             usesDefaultFeatures = false;
           }
           {
@@ -16194,11 +16355,11 @@ rec {
         ];
 
       };
-      "rustls-native-certs 0.8.3" = rec {
+      "rustls-native-certs 0.8.4" = rec {
         crateName = "rustls-native-certs";
-        version = "0.8.3";
+        version = "0.8.4";
         edition = "2021";
-        sha256 = "0qrajg2n90bcr3bcq6j95gjm7a9lirfkkdmjj32419dyyzan0931";
+        sha256 = "0kgazl8zc1sv63qg179bz96ilzh56lzfa5k92ji7d265f4kibdfs";
         libName = "rustls_native_certs";
         dependencies = [
           {
@@ -16330,7 +16491,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "bytemuck";
@@ -16756,7 +16917,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "core-foundation";
@@ -16803,7 +16964,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "core-foundation";
@@ -17263,9 +17424,9 @@ rec {
       };
       "shlex" = rec {
         crateName = "shlex";
-        version = "1.3.0";
-        edition = "2015";
-        sha256 = "0r1y6bv26c1scpxvhg2cabimrmwgbp4p3wy6syj9n0c4s3q2znhg";
+        version = "2.0.1";
+        edition = "2018";
+        sha256 = "1fjsll1cd7d2bcpdij9kd6w62rpbc7qqzvydvs021vsmr1cxvypq";
         authors = [
           "comex <comexk@gmail.com>"
           "Fenhl <fenhl@fenhl.net>"
@@ -17506,7 +17667,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "calloop";
@@ -17621,9 +17782,9 @@ rec {
       };
       "socket2" = rec {
         crateName = "socket2";
-        version = "0.6.3";
+        version = "0.6.4";
         edition = "2021";
-        sha256 = "0gkjjcyn69hqhhlh5kl8byk5m0d7hyrp2aqwzbs3d33q208nwxis";
+        sha256 = "0ldyp5rhba15spwxj1n94xh7sjks1398c3vwpwkxkd1087nwzlaj";
         authors = [
           "Alex Crichton <alex@alexcrichton.com>"
           "Thomas de Zeeuw <thomasdezeeuw@gmail.com>"
@@ -17652,8 +17813,8 @@ rec {
         workspace_member = null;
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/soushi";
-          rev = "83b3f29e722d3e51a2ab371f513c0c5ff32d3a62";
-          sha256 = "17k5rqgp5gnl2cysym2s47s43hh6risw54js51d4s4cmjcw9pi71";
+          rev = "42637d2d1b5a6489a47a513403f00ae831df17d9";
+          sha256 = "0b6kz1pa9wq1klyf29gbfgb75f9wdirh7z005iyiaws8055s9ql9";
         };
         dependencies = [
           {
@@ -17695,7 +17856,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
         ];
         features = {
@@ -18100,7 +18261,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "core-foundation";
@@ -19121,7 +19282,7 @@ rec {
         src = pkgs.fetchgit {
           url = "https://github.com/pleme-io/todoku";
           rev = "a4cf19b6fc00f176fc44ba8087147360147f5d89";
-          sha256 = "0li38d2vprkp8ymy1g0mc1v5kb3xc9466f0d2ddsp0v8d359amva";
+          sha256 = "181128ziwc7ndlvc8lw0hf14bylk5rniilna2jz25x1qqgk79pcj";
         };
         dependencies = [
           {
@@ -19574,11 +19735,11 @@ rec {
         };
         resolvedDefaultFeatures = [ "display" "parse" "serde" ];
       };
-      "toml_edit 0.25.11+spec-1.1.0" = rec {
+      "toml_edit 0.25.12+spec-1.1.0" = rec {
         crateName = "toml_edit";
-        version = "0.25.11+spec-1.1.0";
+        version = "0.25.12+spec-1.1.0";
         edition = "2024";
-        sha256 = "0awzffbkx33v9x4h19b5mfrwp3sn4ifr16y58sbk6j6l5v9c8n8b";
+        sha256 = "1mx5paq837rjw7w51zprrjynk1vaig9yzxfqz9ac79jmd7f3w5fj";
         dependencies = [
           {
             name = "indexmap";
@@ -19771,7 +19932,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "bytes";
@@ -20338,13 +20499,9 @@ rec {
       };
       "typenum" = rec {
         crateName = "typenum";
-        version = "1.20.0";
+        version = "1.20.1";
         edition = "2018";
-        sha256 = "1pj35y6q11d3y55gdl6g1h2dfhmybjming0jdi9bh0bpnqm11kj0";
-        authors = [
-          "Paho Lurie-Gregg <paho@paholg.com>"
-          "Andre Bogus <bogusandre@gmail.com>"
-        ];
+        sha256 = "086s9ly0906kw5yw41249fba97w5zfxf03pyfwdkffvcprqfixdn";
         features = {
           "scale-info" = [ "dep:scale-info" ];
           "scale_info" = [ "scale-info/derive" ];
@@ -20493,9 +20650,9 @@ rec {
       };
       "unicode-segmentation" = rec {
         crateName = "unicode-segmentation";
-        version = "1.13.2";
+        version = "1.13.3";
         edition = "2018";
-        sha256 = "135a26m4a0wj319gcw28j6a5aqvz00jmgwgmcs6szgxjf942facn";
+        sha256 = "1a47zaq83p386r3baq4m018xd5q4q0grdg56i1x042dzn71x7xf6";
         libName = "unicode_segmentation";
         authors = [
           "kwantam <kwantam@gmail.com>"
@@ -20663,9 +20820,9 @@ rec {
       };
       "uuid" = rec {
         crateName = "uuid";
-        version = "1.23.1";
+        version = "1.23.2";
         edition = "2021";
-        sha256 = "0xlwg23rmsfl3gx98qsyzpl24pf4bs9wi3mqx5c6i319hyb4mmyx";
+        sha256 = "1xy942s4z0bi8p3441wvd4ry3hx6ry1c7s6fgrr38462xqybhn6j";
         authors = [
           "Ashley Mannix<ashleymannix@live.com.au>"
           "Dylan DPC<dylan.dpc@gmail.com>"
@@ -21122,7 +21279,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "hashbrown";
@@ -21224,7 +21381,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "rustix";
@@ -21259,7 +21416,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "cursor-icon";
@@ -21311,7 +21468,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "wayland-backend";
@@ -21347,7 +21504,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "wayland-backend";
@@ -21387,7 +21544,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "wayland-backend";
@@ -22055,7 +22212,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "document-features";
@@ -22243,7 +22400,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "document-features";
@@ -22477,7 +22634,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "block";
@@ -22735,7 +22892,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
             features = [ "serde" ];
           }
           {
@@ -24763,7 +24920,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "block2";
@@ -25277,7 +25434,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "indexmap";
@@ -25629,7 +25786,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 2.11.1";
+            packageId = "bitflags 2.12.1";
           }
           {
             name = "dlib";
@@ -25790,9 +25947,9 @@ rec {
       };
       "zerocopy" = rec {
         crateName = "zerocopy";
-        version = "0.8.48";
+        version = "0.8.50";
         edition = "2021";
-        sha256 = "1sb8plax8jbrsng1jdval7bdhk7hhrx40dz3hwh074k6knzkgm7f";
+        sha256 = "1laahnfxs4qyfb1fdf5nbb2qfshi72b1hbi0ffp2zy2m1r7ms1iv";
         authors = [
           "Joshua Liebow-Feeser <joshlf@google.com>"
           "Jack Wrenn <jswrenn@amazon.com>"
@@ -25826,9 +25983,9 @@ rec {
       };
       "zerocopy-derive" = rec {
         crateName = "zerocopy-derive";
-        version = "0.8.48";
+        version = "0.8.50";
         edition = "2021";
-        sha256 = "1m5s0g92cxggqc74j83k1priz24k3z93sj5gadppd20p9c4cvqvh";
+        sha256 = "0fdnr9qslx1hbn2i9rsvy9s95mychfy2vj90ajsjm2basccinqqb";
         procMacro = true;
         libName = "zerocopy_derive";
         authors = [

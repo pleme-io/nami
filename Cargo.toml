@@ -1,6 +1,6 @@
 [package]
 name = "aranami"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2024"
 rust-version = "1.89.0"
 description = "Nami (波) — GPU-rendered TUI browser: full web rendering in the terminal"
