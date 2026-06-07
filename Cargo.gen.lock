@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "cargo_lock_sha256": "149f3d0db419eb6418511595b4f680efa33a303a59407880d85b03b065f507d3",
+  "cargo_lock_sha256": "e2b60692898e0f334d640ace99da1440a18b9a901d2fe9b097b5d62745673200",
   "target_resolves": {
     "base": {
       "adler2-2.0.1": {
@@ -303,7 +303,7 @@
           "std"
         ]
       },
-      "aranami-0.1.3": {
+      "aranami-0.1.4": {
         "runtime_dependencies": [
           {
             "name": "anyhow",
@@ -405,7 +405,7 @@
           },
           {
             "name": "irodzuki",
-            "package_key": "irodzuki-0.1.3",
+            "package_key": "irodzuki-0.1.5",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -415,7 +415,7 @@
           },
           {
             "name": "ishou_tokens",
-            "package_key": "ishou-tokens-0.1.1",
+            "package_key": "ishou-tokens-0.1.3",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -477,7 +477,7 @@
           },
           {
             "name": "nami_core",
-            "package_key": "nami-core-0.1.2",
+            "package_key": "nami-core-0.1.3",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -546,7 +546,7 @@
           },
           {
             "name": "shikumi",
-            "package_key": "shikumi-0.1.0",
+            "package_key": "shikumi-0.1.1",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -4137,7 +4137,7 @@
           "default"
         ]
       },
-      "gen-macros-0.1.8": {
+      "gen-macros-0.1.9": {
         "runtime_dependencies": [
           {
             "name": "proc_macro2",
@@ -4176,11 +4176,11 @@
         "build_dependencies": [],
         "features": []
       },
-      "gen-platform-0.1.8": {
+      "gen-platform-0.1.9": {
         "runtime_dependencies": [
           {
             "name": "gen_macros",
-            "package_key": "gen-macros-0.1.8",
+            "package_key": "gen-macros-0.1.9",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -4190,7 +4190,7 @@
           },
           {
             "name": "gen_types",
-            "package_key": "gen-types-0.1.8",
+            "package_key": "gen-types-0.1.9",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -4244,7 +4244,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "gen-types-0.1.8": {
+      "gen-types-0.1.9": {
         "runtime_dependencies": [
           {
             "name": "blake3",
@@ -6644,7 +6644,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "irodzuki-0.1.3": {
+      "irodzuki-0.1.5": {
         "runtime_dependencies": [
           {
             "name": "bytemuck",
@@ -6731,7 +6731,7 @@
           "default"
         ]
       },
-      "ishou-tokens-0.1.1": {
+      "ishou-tokens-0.1.3": {
         "runtime_dependencies": [
           {
             "name": "irodori",
@@ -8877,7 +8877,7 @@
           "wgsl-out"
         ]
       },
-      "nami-core-0.1.2": {
+      "nami-core-0.1.3": {
         "runtime_dependencies": [
           {
             "name": "blake3",
@@ -13328,6 +13328,78 @@
             "tree": "target"
           },
           {
+            "name": "figment",
+            "package_key": "figment-0.10.19",
+            "kind": "normal",
+            "features": [
+              "env",
+              "yaml",
+              "toml"
+            ],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "notify",
+            "package_key": "notify-8.2.0",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "serde",
+            "package_key": "serde-1.0.228",
+            "kind": "normal",
+            "features": [
+              "derive"
+            ],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "thiserror",
+            "package_key": "thiserror-2.0.18",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "tracing",
+            "package_key": "tracing-0.1.44",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          }
+        ],
+        "build_dependencies": [],
+        "features": []
+      },
+      "shikumi-0.1.1": {
+        "runtime_dependencies": [
+          {
+            "name": "arc_swap",
+            "package_key": "arc-swap-1.9.1",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
             "name": "async_trait",
             "package_key": "async-trait-0.1.89",
             "kind": "normal",
@@ -13353,7 +13425,7 @@
           },
           {
             "name": "gen_platform",
-            "package_key": "gen-platform-0.1.8",
+            "package_key": "gen-platform-0.1.9",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -13363,7 +13435,7 @@
           },
           {
             "name": "gen_types",
-            "package_key": "gen-types-0.1.8",
+            "package_key": "gen-types-0.1.9",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -37284,7 +37356,7 @@
       "edition": "2021",
       "build_script": "build.rs"
     },
-    "aranami-0.1.3": {
+    "aranami-0.1.4": {
       "edition": "2024",
       "binaries": [
         {
@@ -37766,14 +37838,14 @@
     "garasu-0.1.0": {
       "edition": "2024"
     },
-    "gen-macros-0.1.8": {
+    "gen-macros-0.1.9": {
       "edition": "2024",
       "proc_macro": true
     },
-    "gen-platform-0.1.8": {
+    "gen-platform-0.1.9": {
       "edition": "2024"
     },
-    "gen-types-0.1.8": {
+    "gen-types-0.1.9": {
       "edition": "2024"
     },
     "generic-array-0.14.7": {
@@ -37953,13 +38025,13 @@
     "irodori-0.1.1": {
       "edition": "2024"
     },
-    "irodzuki-0.1.3": {
+    "irodzuki-0.1.5": {
       "edition": "2024"
     },
     "is_terminal_polyfill-1.70.2": {
       "edition": "2021"
     },
-    "ishou-tokens-0.1.1": {
+    "ishou-tokens-0.1.3": {
       "edition": "2024"
     },
     "itertools-0.10.5": {
@@ -38114,7 +38186,7 @@
       "edition": "2021",
       "build_script": "build.rs"
     },
-    "nami-core-0.1.2": {
+    "nami-core-0.1.3": {
       "edition": "2024"
     },
     "native-tls-0.2.18": {
@@ -38638,6 +38710,9 @@
       "edition": "2018"
     },
     "shikumi-0.1.0": {
+      "edition": "2024"
+    },
+    "shikumi-0.1.1": {
       "edition": "2024"
     },
     "shlex-2.0.1": {
@@ -39303,21 +39378,21 @@
     }
   },
   "git_nar_sha256": {
-    "awase-0.1.0": "sha256-mRQjfLuuyGsbrss6wiacxweAnoAzOjHUG7c1NZgRqSc=",
-    "egaku-0.1.0": "sha256-HXV0ltAbHRAlyKgkLj3OlzM4hfhwlqSH0OmZzWowKow=",
-    "garasu-0.1.0": "sha256-JjG2Im6dXBU5qPv5hk3mu3nGONVqEWDBQzUiq8woIRM=",
-    "gen-macros-0.1.8": "sha256-/qPu9zmukIQuTj76JofI0drfJ7h69z9sneMSUVZqIak=",
-    "gen-platform-0.1.8": "sha256-/qPu9zmukIQuTj76JofI0drfJ7h69z9sneMSUVZqIak=",
-    "gen-types-0.1.8": "sha256-/qPu9zmukIQuTj76JofI0drfJ7h69z9sneMSUVZqIak=",
-    "hasami-0.1.0": "sha256-QSiCLVnh1eWuG78ikOUqGPh5eQxFaP0XaHrvFMieaus=",
-    "irodzuki-0.1.3": "sha256-F+Ug2HLnS1viCm7zyhJZYqRgFzUee7ats3iMJcDSaRE=",
-    "ishou-tokens-0.1.1": "sha256-8KZr7Iawkt/U5OhVZQCo+Gxo/5uUOghTQWQsnSQ1Gtc=",
-    "kaname-0.1.1": "sha256-OJH5rES++f/TXD/0fiD/Zz/ndOY3geXLwT2s/UW9i9g=",
-    "madori-0.1.2": "sha256-+kQMjbAE9bh0inrhsQrewe//0s9HH9WiCX/lw+1RILg=",
-    "mojiban-0.1.1": "sha256-T7E+qKXbMduKv69JbQyN6zt4GehGBY+Kl1qLaYjT+gw=",
-    "nami-core-0.1.2": "sha256-aO/AazWBSm+Vpzn1gq5Oz25iLX63Di9sapeKl4Yw1MI=",
-    "shikumi-0.1.0": "sha256-1hpQx6tu1Nc78XzxDTwVArW77AgpxIEp+6WzLslBbso=",
-    "soushi-0.1.1": "sha256-ieKkSwFIcxV9LAD8A3NsPLly1nPrJeE8nQHzpG740yw=",
+    "awase-0.1.0": "sha256-QzueilTtpM5RPrEKY5Rt23kg3OCjIBa0QjVCiFlJaAo=",
+    "egaku-0.1.0": "sha256-A5FXo3y06OQfXlBI70a4lJKbuLVwmxvRc3Fy1Wqxs3A=",
+    "garasu-0.1.0": "sha256-d+FkFnwtZnF0A7747y+Xg2+ndMduSBiuHtF40kArcKY=",
+    "gen-macros-0.1.9": "sha256-KkZmHxQBwz3Q4XNaJVLdl6TLLPiR+erMbGOrrvPRE0A=",
+    "gen-platform-0.1.9": "sha256-KkZmHxQBwz3Q4XNaJVLdl6TLLPiR+erMbGOrrvPRE0A=",
+    "gen-types-0.1.9": "sha256-KkZmHxQBwz3Q4XNaJVLdl6TLLPiR+erMbGOrrvPRE0A=",
+    "hasami-0.1.0": "sha256-Ofd3sG20dcCsMaY1InXLgrZR/7Bd6ri2f6JKqR8AT9I=",
+    "irodzuki-0.1.5": "sha256-rY9vl3v9qG1ctd0ZHDPpB1ODolX78A+2mJduAJViGIA=",
+    "ishou-tokens-0.1.3": "sha256-ihLvPvl8S9zLI3yWChVIRORiQI81UcjNe0i6TcL6tgQ=",
+    "kaname-0.1.1": "sha256-opAqwC8Bh0nIu38y2nGmkGPY9lu6N1m63vNTPIPXUoU=",
+    "madori-0.1.2": "sha256-XFYmEjQx7K67a2IVBRYwktI67U+U6M8/8ZvzcMtKDQ0=",
+    "mojiban-0.1.1": "sha256-1kqAqSCEoEJ8/sAvlESMJ1lQ9tguvOaQtNyNJpOXKo4=",
+    "nami-core-0.1.3": "sha256-DjpmlNrbLfzcoLwjc3rfC3K8kxKX3UfLq5VqhtQgcQE=",
+    "shikumi-0.1.1": "sha256-Vw1SIFXcINha2vPklXuEiSMbmjPXYKSWedRttkb1bCE=",
+    "soushi-0.1.1": "sha256-1sjKE8vGSe7wTaBJDvQD9I6cYTyY+n/yarymBAdVzBQ=",
     "tatara-core-0.2.0": "sha256-5Lv0gja4VgaOiRf8HxhZQYmj9/HAcZeb0kNhiukgTWU=",
     "tatara-eval-0.2.0": "sha256-5Lv0gja4VgaOiRf8HxhZQYmj9/HAcZeb0kNhiukgTWU=",
     "tatara-lattice-0.2.0": "sha256-5Lv0gja4VgaOiRf8HxhZQYmj9/HAcZeb0kNhiukgTWU=",
@@ -39325,8 +39400,8 @@
     "tatara-lisp-derive-0.2.0": "sha256-5Lv0gja4VgaOiRf8HxhZQYmj9/HAcZeb0kNhiukgTWU=",
     "tatara-nix-0.2.0": "sha256-5Lv0gja4VgaOiRf8HxhZQYmj9/HAcZeb0kNhiukgTWU=",
     "tatara-process-0.2.0": "sha256-5Lv0gja4VgaOiRf8HxhZQYmj9/HAcZeb0kNhiukgTWU=",
-    "todoku-0.1.0": "sha256-kt105sM49CK+FMrSGG0uk/pFgoOAU8Q2bfYwHj8SIaA=",
-    "tsunagu-0.1.1": "sha256-TfiZRLXx7D0bftYfxX54XgRjvAII2SY8RVLFGDrxquM="
+    "todoku-0.1.0": "sha256-KzwRNZm64yKgw7OIzYvBv5pGi5/DwA9qjlV1a/FSzho=",
+    "tsunagu-0.1.1": "sha256-CqyCfnCRmRn5ivDJFDADY4bqkyF6wGsgABD+U/qwXy0="
   },
   "flake_metadata": {
     "aranami": {

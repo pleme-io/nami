@@ -149,7 +149,7 @@ version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40c48f72fd53cd289104fc64099abca73db4166ad86ea0b4341abe65af83dadc"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -160,7 +160,7 @@ checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
 dependencies = [
  "anstyle",
  "once_cell_polyfill",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -235,7 +235,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.60.2",
+ "windows-sys 0.52.0",
  "x11rb",
 ]
 
@@ -1137,7 +1137,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -1246,7 +1246,7 @@ dependencies = [
 [[package]]
 name = "egaku"
 version = "0.1.0"
-source = "git+https://github.com/pleme-io/egaku#0ea3762b7101beabcc97927735a7a437282ade64"
+source = "git+https://github.com/pleme-io/egaku#7984a22dcae5913ba524541129055fba859254ed"
 dependencies = [
  "serde",
  "thiserror 2.0.18",
@@ -1303,7 +1303,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1649,8 +1649,8 @@ dependencies = [
 
 [[package]]
 name = "gen-macros"
-version = "0.1.8"
-source = "git+https://github.com/pleme-io/gen#8ecee494c1d478d3d34532919ccea322075d7890"
+version = "0.1.9"
+source = "git+https://github.com/pleme-io/gen#6d82c9d3885c781e923ec46330d05d7eca469a3b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1659,8 +1659,8 @@ dependencies = [
 
 [[package]]
 name = "gen-platform"
-version = "0.1.8"
-source = "git+https://github.com/pleme-io/gen#8ecee494c1d478d3d34532919ccea322075d7890"
+version = "0.1.9"
+source = "git+https://github.com/pleme-io/gen#6d82c9d3885c781e923ec46330d05d7eca469a3b"
 dependencies = [
  "gen-macros",
  "gen-types",
@@ -1672,8 +1672,8 @@ dependencies = [
 
 [[package]]
 name = "gen-types"
-version = "0.1.8"
-source = "git+https://github.com/pleme-io/gen#8ecee494c1d478d3d34532919ccea322075d7890"
+version = "0.1.9"
+source = "git+https://github.com/pleme-io/gen#6d82c9d3885c781e923ec46330d05d7eca469a3b"
 dependencies = [
  "blake3",
  "chrono",
@@ -1911,7 +1911,7 @@ dependencies = [
 [[package]]
 name = "hasami"
 version = "0.1.0"
-source = "git+https://github.com/pleme-io/hasami#6eb959a307bac2198b6d4884d57f7c22be95f007"
+source = "git+https://github.com/pleme-io/hasami#57ed3af9b60d26aca6edc457865f35fabda94dda"
 dependencies = [
  "arboard",
  "thiserror 2.0.18",
@@ -2204,7 +2204,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.62.2",
+ "windows-core",
 ]
 
 [[package]]
@@ -2425,8 +2425,8 @@ dependencies = [
 
 [[package]]
 name = "irodzuki"
-version = "0.1.4"
-source = "git+https://github.com/pleme-io/irodzuki#8f8891c4c8953a4c9cee0264676e3e656c70d83c"
+version = "0.1.5"
+source = "git+https://github.com/pleme-io/irodzuki#6c21de3db4e7c462f524a8fa98295b308f712e99"
 dependencies = [
  "bytemuck",
  "egaku 0.1.0 (git+https://github.com/pleme-io/egaku)",
@@ -2445,8 +2445,8 @@ checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
 name = "ishou-tokens"
-version = "0.1.1"
-source = "git+https://github.com/pleme-io/ishou#9dbc234a345a4ddc456bd912a66e851840a07114"
+version = "0.1.3"
+source = "git+https://github.com/pleme-io/ishou#57846be3f314df65a81eade875200c4664420006"
 dependencies = [
  "irodori",
  "serde",
@@ -2600,7 +2600,7 @@ dependencies = [
 [[package]]
 name = "kaname"
 version = "0.1.1"
-source = "git+https://github.com/pleme-io/kaname#cd4cb753f2ce1a929f4924778e933c6b70dd39c6"
+source = "git+https://github.com/pleme-io/kaname#ebaad077142420a03575b56b2d1e81e74b19ddde"
 dependencies = [
  "rmcp",
  "schemars 1.2.1",
@@ -2899,7 +2899,7 @@ checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
 [[package]]
 name = "madori"
 version = "0.1.2"
-source = "git+https://github.com/pleme-io/madori#49b66d6190cf9f10d9a50aea2876c2b174ac8d0c"
+source = "git+https://github.com/pleme-io/madori#18b2bcf4a1f46555d73679dddc5c9c63a0c91b4c"
 dependencies = [
  "egaku 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "garasu 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3022,7 +3022,7 @@ dependencies = [
 [[package]]
 name = "mojiban"
 version = "0.1.1"
-source = "git+https://github.com/pleme-io/mojiban#6d7e57d71c8c50d828f6ef06d5d50867801ab4d6"
+source = "git+https://github.com/pleme-io/mojiban#5f905ae91b67b912b10f21273a77fa95ddcba2a7"
 dependencies = [
  "pulldown-cmark",
  "serde",
@@ -3069,7 +3069,7 @@ dependencies = [
 [[package]]
 name = "nami-core"
 version = "0.1.3"
-source = "git+https://github.com/pleme-io/nami-core?branch=main#64a60298a4462a8785ac0ad0535c9911f192f310"
+source = "git+https://github.com/pleme-io/nami-core?branch=main#fcbc7dc86fd977c677babec34976a0a3b1c89535"
 dependencies = [
  "blake3",
  "hmac",
@@ -3193,7 +3193,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -4147,7 +4147,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.60.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4575,7 +4575,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4588,7 +4588,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5135,13 +5135,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52d1cfed4120b4d927bf7c0f86d2087a4a7d6027c906d9f9d525a80573b9be51"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
 name = "soushi"
 version = "0.1.1"
-source = "git+https://github.com/pleme-io/soushi#14734fb784c9e6b61108b61f66d6a50d7d9d23b5"
+source = "git+https://github.com/pleme-io/soushi#166cf93a072058cfb554621dc991020567faf460"
 dependencies = [
  "rhai",
  "thiserror 2.0.18",
@@ -5462,7 +5462,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5647,7 +5647,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "todoku"
 version = "0.1.0"
-source = "git+https://github.com/pleme-io/todoku#70fb934c5d8d8be1cb9d33b392ccf8e2cf60ab07"
+source = "git+https://github.com/pleme-io/todoku#350edc1bfb6a9ebb6734c9f1ef5c200513ba05c6"
 dependencies = [
  "async-trait",
  "reqwest",
@@ -5926,7 +5926,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 [[package]]
 name = "tsunagu"
 version = "0.1.1"
-source = "git+https://github.com/pleme-io/tsunagu#42261df0533c2d2c5205e02d2c875777d3b09acc"
+source = "git+https://github.com/pleme-io/tsunagu#64c06a1ff895409209d626db3469181bb24f9afd"
 dependencies = [
  "dirs",
  "serde",
@@ -6535,7 +6535,7 @@ dependencies = [
  "web-sys",
  "wgpu-types",
  "windows",
- "windows-core 0.58.0",
+ "windows-core",
 ]
 
 [[package]]
@@ -6558,7 +6558,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6567,7 +6567,7 @@ version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd04d41d93c4992d421894c18c8b43496aa748dd4c081bac0dc93eb0489272b6"
 dependencies = [
- "windows-core 0.58.0",
+ "windows-core",
  "windows-targets 0.52.6",
 ]
 
@@ -6577,24 +6577,11 @@ version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ba6d44ec8c2591c134257ce647b7ea6b20335bf6379a27dac5f1641fcf59f99"
 dependencies = [
- "windows-implement 0.58.0",
- "windows-interface 0.58.0",
+ "windows-implement",
+ "windows-interface",
  "windows-result 0.2.0",
  "windows-strings 0.1.0",
  "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "windows-core"
-version = "0.62.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8e83a14d34d0623b51dce9581199302a221863196a1dde71a7663a4c2be9deb"
-dependencies = [
- "windows-implement 0.60.2",
- "windows-interface 0.59.3",
- "windows-link",
- "windows-result 0.4.1",
- "windows-strings 0.5.1",
 ]
 
 [[package]]
@@ -6609,32 +6596,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "windows-implement"
-version = "0.60.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "053e2e040ab57b9dc951b72c264860db7eb3b0200ba345b4e4c3b14f67855ddf"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
 name = "windows-interface"
 version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "053c4c462dc91d3b1504c6fe5a726dd15e216ba718e84a0e46a88fbe5ded3515"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "windows-interface"
-version = "0.59.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f316c4a2570ba26bbec722032c4099d8c8bc095efccdc15688708623367e358"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6700,15 +6665,6 @@ name = "windows-sys"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
-dependencies = [
- "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.59.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
 dependencies = [
  "windows-targets 0.52.6",
 ]
